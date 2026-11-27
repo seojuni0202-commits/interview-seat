@@ -195,7 +195,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
  <label>상태</label>
  <div class="row" style="margin-top:0">
   <button class="stbtn" data-s="empty">비어있음</button><button class="stbtn" data-s="wait" style="background:var(--wait)">대기</button>
-  <button class="stbtn" data-s="fb" style="background:var(--fb)">피드백 중</button><button class="stbtn" data-s="done" style="background:var(--done)">완료</button>
+  <button class="stbtn" data-s="fb" style="background:var(--fb)">피드백 중</button><button class="stbtn" data-s="done" style="background:var(--done)">완료</button><button class="stbtn" data-s="hold" style="background:#ede9fe;color:#6d28d9" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>
  </div>
  <div id="dHist" style="margin-top:12px"></div>
  <div class="row"><button class="pri" id="dSave">저장</button><button id="dClose">닫기</button></div>
@@ -283,7 +283,9 @@ function addLog(seat,s,st){S.log.push({time:now(),ts:Date.now(),seat,sid:s?s.id:
 function seatLabel(k){if(!k)return'자리 없이 완료';const[r,b,p]=k.split('-');return`${b}분단 ${r}줄 ${p==1?'왼쪽':'오른쪽'}`}
 
 const NEXT={wait:['fb','호명'],fb:['done','완료'],done:['empty','비우기']};
-function toggleHold(s){if(ROLE!=='admin'||!s||stuStatus(s))return;if(s.hold)delete s.hold;else s.hold=true;toast(s.hold?`${s.name} 보류 (나중에 옴)`:`${s.name} 보류 해제`);render()}
+function toggleHold(s){if(ROLE!=='admin'||!s)return;const x=stuStatus(s);if(x&&x.gone)return;
+ if(x){delete S.seats[x.seat];addLog(x.seat,s,'empty');s.hold=true;toast(`${s.name} 보류 — 자리를 비웠어요(나중에 다시 옴)`);render();return}
+ if(s.hold)delete s.hold;else s.hold=true;toast(s.hold?`${s.name} 보류 (나중에 옴)`:`${s.name} 보류 해제`);render()}
 function doneNoSeat(s){if(ROLE!=='admin'||!s||stuStatus(s))return;delete s.hold;S.log.push({time:now(),ts:Date.now(),seat:'',sid:s.id,name:s.name,no:s.no,st:'done'});toast(`${s.name} 완료 처리(자리 없이)`);render()}
 function undoDone(s){if(ROLE!=='admin'||!s)return;const n=S.log.length;S.log=S.log.filter(l=>!(l.sid===s.id&&l.st==='done'&&!l.seat));if(S.log.length!==n){toast(`${s.name} 완료 취소`);render()}}
 function bunInfo(b){if(b===1)return'1그룹';if(b===2)return'왼 1그룹 · 오 2그룹';if(b===3)return'2그룹';return({'0':'공용','1':'1그룹','2':'2그룹','-1':'사용 안 함'})[S.g4]}
@@ -312,7 +314,7 @@ function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML=
  S.students.filter(s=>slotOk(s)&&(F==='all'||F==='todo'||String(s.g)===F)&&(!q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(q)))
  .filter(s=>F!=='todo'||!stuStatus(s)).forEach(s=>{const x=stuStatus(s);const d=document.createElement('div');d.className='stu';
   d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b> <span class="meta">${s.no} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span></div>
-  <div style="text-align:right">${x?`<span class="badge ${x.st}">${x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`} <button data-a="ed" title="수정">✎</button></div>`;
+  <div style="text-align:right">${x?`<span class="badge ${x.st}">${x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>${x.gone?'':'<button data-a="hold" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>'}`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`} <button data-a="ed" title="수정">✎</button></div>`;
   d.querySelector('[data-a=ed]').onclick=()=>openStu(s.id);
   const b=d.querySelector('[data-a=sit]');if(b)b.onclick=()=>sit(s);
   const dn=d.querySelector('[data-a=done]');if(dn)dn.onclick=()=>doneNoSeat(s);
@@ -418,7 +420,7 @@ function renderTable(){const T=$('lT'),cur=T.value;T.innerHTML='<option value=""
  const H=[['t','시간'],['g','그룹'],['no','명찰 번호'],['name','이름'],['school','학교'],['phone','전화번호'],['memo','비고'],['st','상태'],['seat','자리'],['','']];
  $('lTb').innerHTML='<thead><tr>'+H.map(([k,n])=>`<th data-k="${k}">${n}${k&&k===lK?(lD>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
   L.map(({s,x})=>`<tr><td>${s.t}</td><td class="gtag g${s.g}">${s.g}그룹</td><td>${s.no}</td><td><b>${s.name}</b></td><td>${s.school||''}</td><td>${s.phone||'<span class="meta">—</span>'}</td><td class="meta">${s.memo||''}</td>
-  <td><span class="badge ${x?x.st:(s.hold?'hold':'')}">${stLabel(x,s)}</span></td><td>${x&&!x.gone?seatLabel(x.seat):''}</td><td><button data-e="${s.id}">수정</button>${x?'':` <button data-s="${s.id}">앉히기</button> <button data-done="${s.id}" title="자리 배치 없이 완료 처리">완료</button> <button data-hold="${s.id}" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`}${x&&x.gone&&!x.seat?` <button data-undo="${s.id}">완료 취소</button>`:''}</td></tr>`).join('')+'</tbody>';
+  <td><span class="badge ${x?x.st:(s.hold?'hold':'')}">${stLabel(x,s)}</span></td><td>${x&&!x.gone?seatLabel(x.seat):''}</td><td><button data-e="${s.id}">수정</button>${x?'':` <button data-s="${s.id}">앉히기</button> <button data-done="${s.id}" title="자리 배치 없이 완료 처리">완료</button> <button data-hold="${s.id}" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`}${x&&x.gone&&!x.seat?` <button data-undo="${s.id}">완료 취소</button>`:''}${x&&!x.gone?` <button data-hold="${s.id}" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>`:''}</td></tr>`).join('')+'</tbody>';
  $('lcnt').textContent=`${L.length}명 / 전체 ${S.students.length}명`;
  $('lTb').querySelectorAll('th').forEach(th=>{if(th.dataset.k)th.onclick=()=>{const k=th.dataset.k;lD=k===lK?-lD:1;lK=k;renderTable()}});
  $('lTb').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openStu(b.dataset.e));
@@ -523,6 +525,7 @@ function tnPick(sel,tBox,nBox){const opts=[...sel.options].filter(o=>o.value);co
 arriveUI=function(){tnPick($('aTN'),$('aTimeBox'),$('aNoBox'));mirrorNames($('aName'),$('aNameBox'));aInfo()};
 const _os3=openSeat;openSeat=function(k){$('dTimeBox')._t=null;_os3(k);tnPick($('dTN'),$('dTimeBox'),$('dNoBox'))};
 const _osRO=openSeat;openSeat=function(k){if(ROLE!=='admin')return;_osRO(k)};
+const _dsHold=$('dSave').onclick;$('dSave').onclick=()=>{if(curSt==='hold'){const z=S.seats[cur];const s=z&&stu(z.sid);$('dlg').close();if(s)toggleHold(s);else toast('보류할 학생이 없는 자리예요');return}_dsHold()};
 $('menuBtn').onclick=e=>{e.stopPropagation();$('menu').classList.toggle('open')};document.addEventListener('click',()=>$('menu').classList.remove('open'));
 buildSlots();render();
 </script></body></html>
