@@ -20,7 +20,7 @@ button.pri{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:
 .menu.open>div{display:flex;flex-direction:column;gap:4px}.menu>div button{text-align:left;border:none}
 .stats{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
 .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--mute)}.chip b{color:var(--ink);font-size:14px;margin-left:3px}
-.chip.hold{background:#ede9fe;color:#6d28d9}.chip.hold b{color:#6d28d9}.chip.absent{background:#e5e7eb;color:#374151}.chip.skip{background:#ffedd5;color:#9a3412}.chip.skip b{color:#9a3412}.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
+.chip.hold{background:#ede9fe;color:#6d28d9}.chip.hold b{color:#6d28d9}.chip.absent{background:#fee2e2;color:#b91c1c}.chip.absent b{color:#b91c1c}.chip.skip{background:#ffedd5;color:#9a3412}.chip.skip b{color:#9a3412}.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;padding:10px 16px 16px}
 @media(max-width:1100px){main{grid-template-columns:minmax(0,1fr)}aside{position:static!important;max-height:none!important}.list{max-height:420px}}
 .room{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
@@ -51,7 +51,7 @@ aside{background:var(--card);border:1px solid var(--line);border-radius:12px;pad
 .stu{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);gap:6px}
 .stu .meta{color:var(--mute);font-size:12px}.stu button{min-height:30px;padding:4px 9px;font-size:12px}
 .badge{font-size:11px;padding:2px 7px;border-radius:10px;background:#f3f4f6;font-weight:700;white-space:nowrap}
-.badge.wait{background:var(--wait);color:var(--waitk)}.badge.fb{background:var(--fb);color:var(--fbk)}.badge.done{background:var(--done);color:var(--donek)}.badge.hold{background:#ede9fe;color:#6d28d9}.badge.absent{background:#e5e7eb;color:#374151;text-decoration:line-through}.badge.skip{background:#ffedd5;color:#9a3412}
+.badge.wait{background:var(--wait);color:var(--waitk)}.badge.fb{background:var(--fb);color:var(--fbk)}.badge.done{background:var(--done);color:var(--donek)}.badge.hold{background:#ede9fe;color:#6d28d9}.badge.absent{background:#fee2e2;color:#b91c1c;font-weight:700}.absno{color:#b91c1c;font-weight:700}.absno s{color:#9ca3af;font-weight:400;margin-left:3px}tr.absrow td{background:#fef2f2}.stu.absrow{background:#fef2f2}.badge.skip{background:#ffedd5;color:#9a3412}
 .gtag{font-size:11px;font-weight:800}.gtag.g1{color:var(--g1)}.gtag.g2{color:var(--g2)}
 dialog{border:none;border-radius:14px;padding:20px;width:min(440px,92vw);box-shadow:0 20px 50px #0004}
 dialog::backdrop{background:#1118274d}
@@ -334,12 +334,13 @@ function seatLabel(k){if(!k)return'자리 없이 완료';const[r,b,p]=k.split('-
 const NEXT={wait:['fb','호명'],fb:['done','완료'],done:['empty','비우기']};
 // 결석: 그 시간대 번호를 하나 줄이고, 아직 안 온 학생 번호를 1번부터 다시 채움(도착한 학생 번호는 그대로)
 const live=s=>!s.absent;
+const noTxt=s=>s.absent?`<span class="absno">결석${s.absNo?`<s>${s.absNo}</s>`:''}</span>`:(s.no||'');
 function compactSlot(t,g){const L=S.students.filter(x=>x.t===t&&+x.g===+g&&live(x));const arr=L.filter(x=>stuStatus(x));const used=new Set(arr.map(x=>x.no));
  const free=[];for(let i=1;i<=L.length+arr.length;i++){const n=g+'-'+i;if(!used.has(n))free.push(n)}
  L.filter(x=>!stuStatus(x)).sort((a,b)=>cmpNo(a.no)-cmpNo(b.no)).forEach((x,i)=>x.no=free[i])}
 function toggleAbsent(s){if(ROLE!=='admin'||!s||stuStatus(s))return;
- if(s.absent){delete s.absent;s.no=s.g+'-'+(S.students.filter(x=>x.t===s.t&&+x.g===+s.g&&live(x)).length);compactSlot(s.t,s.g);toast(`${s.name} 결석 취소 → ${s.no}`)}
- else{s.absent=true;delete s.hold;s.no='';compactSlot(s.t,s.g);toast(`${s.name} 결석 — ${s.t} 번호가 하나 줄었어요`)}
+ if(s.absent){delete s.absent;delete s.absNo;s.no=s.g+'-'+(S.students.filter(x=>x.t===s.t&&+x.g===+s.g&&live(x)).length);compactSlot(s.t,s.g);toast(`${s.name} 결석 취소 → ${s.no}`)}
+ else{s.absent=true;delete s.hold;if(s.no)s.absNo=s.no;s.no='';compactSlot(s.t,s.g);toast(`${s.name} 결석 — ${s.t} 번호가 하나 줄었어요`)}
  render()}
 // ===== 호명 순서 =====
 function nextQ(){return Math.max(0,...Object.values(S.seats).map(z=>+z.q||0))+1}
@@ -417,8 +418,8 @@ let F='all';
 function slotOk(s){return S.slot==='all'||s.t===S.slot}
 function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML='';
  S.students.filter(s=>slotOk(s)&&(F==='all'||(F==='todo'&&live(s)&&!s.skip)||(F==='absent'&&s.absent)||(F==='skip'&&s.skip)||(String(s.g)===F&&live(s)))&&(!q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(q)))
- .filter(s=>F!=='todo'||!stuStatus(s)).forEach(s=>{const x=stuStatus(s);const d=document.createElement('div');d.className='stu';
-  d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b> <span class="meta">${s.no} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span>${s.memo?`<div class="meta" style="color:#92400e">📝 ${s.memo}</div>`:''}</div>
+ .filter(s=>F!=='todo'||!stuStatus(s)).forEach(s=>{const x=stuStatus(s);const d=document.createElement('div');d.className='stu'+(s.absent?' absrow':'');
+  d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b>${s.absent?' <span class="badge absent">결석</span>':''} <span class="meta">${noTxt(s)} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span>${s.memo?`<div class="meta" style="color:#92400e">📝 ${s.memo}</div>`:''}</div>
   <div style="text-align:right">${x?`<span class="badge ${s.skip?'skip':x.st}">${s.skip?'안 하고 감':x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>${x.gone?`<button data-a="skip" title="피드백 안 받고 간 학생">${s.skip?'취소':'안 하고 감'}</button>`:'<button data-a="hold" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button> <button data-a="skip" title="면접을 안 하고 간 학생 — 자리를 비워요">안 하고 감</button>'}`:s.absent?`<span class="badge absent">결석</span><br><button data-a="absent">결석 취소</button>`:s.skip?`<span class="badge skip">안 하고 감</span><br><button data-a="skip">취소</button>`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button> <button data-a="absent" title="안 오는 학생 — 그 시간 번호가 하나 줄어요">결석</button> <button data-a="skip" title="면접을 안 하고 간 학생">안 하고 감</button>`} <button data-a="ed" title="수정">✎</button></div>`;
   d.querySelector('[data-a=ed]').onclick=()=>openStu(s.id);
   const b=d.querySelector('[data-a=sit]');if(b)b.onclick=()=>sit(s);
@@ -516,7 +517,7 @@ function renderPerm(){const R=PD.requests,M=PD.members;$('reqCnt').textContent=R
   rv.onclick=()=>{if(rv.dataset.c){permBusy(rv,()=>PERM.revoke(m.uid,m.name),m.name+' 님 권한을 회수했어요')}else{rv.dataset.c=1;rv.textContent='한 번 더 누르면 회수';setTimeout(()=>{if(rv.isConnected){delete rv.dataset.c;rv.textContent='권한 회수'}},4000)}};
   tb.append(el('tr',null,el('td',null,el('b',{text:m.name})),el('td',null,sel),el('td',null,rv)))})}
 const times=()=>[...new Set(S.students.map(s=>s.t))].filter(Boolean).sort();
-let lK='t',lD=1;
+let lK='t',lD=1;const nk=s=>s.absent?1e6+cmpNo(s.absNo||0):cmpNo(s.no);
 function stLabel(x,s){if(s&&s.skip)return'안 하고 감';return x?(x.gone?'귀가':ST[x.st]):(s&&s.absent?'결석':s&&s.skip?'안 하고 감':s&&s.hold?'보류':'미착석')}
 function setLT(v){const T=$('lT');T.dataset.want=v==='all'?'':v;T.value=T.dataset.want}
 function renderTable(){const T=$('lT'),cur=T.dataset.want!==undefined?T.dataset.want:T.value;delete T.dataset.want;T.innerHTML='<option value="">전체 시간</option>'+times().map(x=>`<option>${x}</option>`).join('');T.value=cur;
@@ -524,10 +525,10 @@ function renderTable(){const T=$('lT'),cur=T.dataset.want!==undefined?T.dataset.
  const L=S.students.map(s=>({s,x:stuStatus(s)})).filter(({s,x})=>(!T.value||s.t===T.value)&&(!G||String(s.g)===G)&&(!Q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(Q))
   &&(!F||(F==='none'?!x&&!s.hold&&!s.skip&&live(s):F==='hold'?!x&&s.hold:F==='absent'?s.absent:F==='skip'?s.skip:F==='done'?x&&x.st==='done':x&&x.st===F&&!x.gone)));
  const key=({s,x})=>lK==='no'?cmpNo(s.no):lK==='st'?stLabel(x,s):lK==='seat'?(x?x.seat:''):String(s[lK]??'');
- L.sort((a,b)=>{if(lK==='t')return(a.s.t.localeCompare(b.s.t)||a.s.g-b.s.g||cmpNo(a.s.no)-cmpNo(b.s.no))*lD;const p=key(a),q=key(b);return(p>q?1:p<q?-1:0)*lD});
+ L.sort((a,b)=>{if(lK==='t')return(a.s.t.localeCompare(b.s.t)||a.s.g-b.s.g||nk(a.s)-nk(b.s))*lD;const p=key(a),q=key(b);return(p>q?1:p<q?-1:0)*lD});
  const H=[['t','시간'],['g','그룹'],['no','명찰 번호'],['name','이름'],['school','학교'],['phone','전화번호'],['memo','비고'],['st','상태'],['seat','자리'],['','']];
  $('lTb').innerHTML='<thead><tr>'+H.map(([k,n])=>`<th data-k="${k}">${n}${k&&k===lK?(lD>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
-  L.map(({s,x})=>`<tr><td>${s.t}</td><td class="gtag g${s.g}">${s.g}그룹</td><td>${s.no}</td><td><b>${s.name}</b></td><td>${s.school||''}</td><td>${s.phone||'<span class="meta">—</span>'}</td><td class="meta">${s.memo||''}</td>
+  L.map(({s,x})=>`<tr${s.absent?' class="absrow"':''}><td>${s.t}</td><td class="gtag g${s.g}">${s.g}그룹</td><td>${noTxt(s)}</td><td><b>${s.name}</b></td><td>${s.school||''}</td><td>${s.phone||'<span class="meta">—</span>'}</td><td class="meta">${s.memo||''}</td>
   <td><span class="badge ${s.skip?'skip':x?x.st:(s.absent?'absent':s.hold?'hold':'')}">${stLabel(x,s)}</span></td><td>${x&&!x.gone?seatLabel(x.seat):''}</td><td><button data-hist="${s.id}" title="이 학생 변경 기록">기록</button> <button data-e="${s.id}">수정</button>${x?'':s.absent?` <button data-absent="${s.id}">결석 취소</button>`:s.skip?` <button data-skip="${s.id}">안 하고 감 취소</button>`:` <button data-skip="${s.id}" title="면접을 안 하고 간 학생">안 하고 감</button> <button data-absent="${s.id}" title="안 오는 학생 — 그 시간 번호가 하나 줄어요">결석</button> <button data-s="${s.id}">앉히기</button> <button data-done="${s.id}" title="자리 배치 없이 완료 처리">완료</button> <button data-hold="${s.id}" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`}${x&&x.gone&&!x.seat?` <button data-undo="${s.id}">완료 취소</button>`:''}${x&&x.gone?` <button data-skip="${s.id}" title="피드백 안 받고 간 학생">${s.skip?'안 하고 감 취소':'안 하고 감'}</button>`:''}${x&&!x.gone?` <button data-hold="${s.id}" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button> <button data-skip="${s.id}" title="면접을 안 하고 간 학생 — 자리를 비워요">안 하고 감</button>`:''}</td></tr>`).join('')+'</tbody>';
  $('lcnt').textContent=`${L.length}명 / 전체 ${S.students.length}명`;
  $('lTb').querySelectorAll('th').forEach(th=>{if(th.dataset.k)th.onclick=()=>{const k=th.dataset.k;lD=k===lK?-lD:1;lK=k;renderTable()}});
@@ -550,7 +551,7 @@ function renderSum(){renderTiles();let tot=[0,0,0,0],th=0,ta=0,tk=0;
   const no=g=>c(g).map(s=>s.no).sort((x,y)=>cmpNo(x)-cmpNo(y)).join(', ')||'—';
   tot[0]+=c(1).length;tot[1]+=c(2).length;tot[2]+=gone(1);tot[3]+=gone(2);
   const hl=a.filter(s=>s.hold&&!stuStatus(s));th+=hl.length;const hn=hl.map(s=>s.no+' '+s.name).join(', ');
-  return`<tr data-t="${t}" style="cursor:pointer"><td><b>${t}</b></td><td class="n">${c(1).length} <span class="meta">(${gone(1)})</span></td><td class="meta">${no(1)}</td><td class="n">${c(2).length} <span class="meta">(${gone(2)})</span></td><td class="meta">${no(2)}</td><td style="color:#6d28d9">${hn||'<span class="meta">—</span>'}</td><td class="meta">${abl.map(s=>s.name).join(', ')||'—'}</td><td style="color:#9a3412">${skl.map(s=>s.no+' '+s.name).join(', ')||'<span class="meta">—</span>'}</td><td class="n"><b>${a.length}</b></td></tr>`});
+  return`<tr data-t="${t}" style="cursor:pointer"><td><b>${t}</b></td><td class="n">${c(1).length} <span class="meta">(${gone(1)})</span></td><td class="meta">${no(1)}</td><td class="n">${c(2).length} <span class="meta">(${gone(2)})</span></td><td class="meta">${no(2)}</td><td style="color:#6d28d9">${hn||'<span class="meta">—</span>'}</td><td class="meta">${abl.map(s=>(s.absNo?s.absNo+' ':'')+s.name).join(', ')||'—'}</td><td style="color:#9a3412">${skl.map(s=>s.no+' '+s.name).join(', ')||'<span class="meta">—</span>'}</td><td class="n"><b>${a.length}</b></td></tr>`});
  $('sTb').innerHTML='<thead><tr><th>시간</th><th>1그룹</th><th>1그룹 번호</th><th>2그룹</th><th>2그룹 번호</th><th>보류</th><th>결석</th><th>안 하고 감</th><th>합계</th></tr></thead><tbody>'+rows.join('')+
   `</tbody><tfoot><tr><td>합계</td><td class="n">${tot[0]} <span class="meta">(${tot[2]})</span></td><td></td><td class="n">${tot[1]} <span class="meta">(${tot[3]})</span></td><td></td><td>${th}명</td><td>${ta}명</td><td>${tk}명</td><td class="n">${tot[0]+tot[1]}</td></tr></tfoot>`;
  $('sTb').querySelectorAll('tr[data-t]').forEach(r=>r.onclick=()=>{S.slot=r.dataset.t;$('slot').value=S.slot;setLT(S.slot);show('list');render()})}
