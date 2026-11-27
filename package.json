@@ -1,0 +1,6 @@
+{
+  "name": "interview-seat",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "firebase-tools": "13.29.1" }
+}

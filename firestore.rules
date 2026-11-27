@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function self(uid) { return signedIn() && request.auth.uid == uid; }
+    function path(c, id) { return /databases/$(database)/documents/$(c)/$(id); }
+    function isMember() { return signedIn() && exists(path('members', request.auth.uid)); }
+    function myRole() { return get(path('members', request.auth.uid)).data.role; }
+    function isFirstOwner() { return signedIn() && exists(path('meta', 'owner')) && get(path('meta', 'owner')).data.uid == request.auth.uid; }
+    function isOwner() { return isFirstOwner() || (isMember() && myRole() == 'owner'); }
+    function isAdmin() { return isOwner() || (isMember() && myRole() == 'admin'); }
+    function canView() { return isOwner() || isMember(); }
+
+    // 첫 소유자: 설치 직후 소유자 링크를 처음 연 사람 한 명. 한 번 정해지면 바꿀 수 없음
+    match /meta/{d} {
+      allow get: if signedIn() && d == 'owner';
+      allow create: if d == 'owner' && signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'at'])
+        && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 권한 요청: 본인이 이름만 적어 보냄. 소유자가 보고 승인·거절
+    match /requests/{uid} {
+      allow get: if self(uid) || isOwner();
+      allow list: if isOwner();
+      allow create, update: if self(uid) && !isMember()
+        && request.resource.data.keys().hasOnly(['name', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 20;
+      allow delete: if self(uid) || isOwner();
+    }
+
+    // 승인된 사람과 직책: 소유자만 정함
+    match /members/{uid} {
+      allow get: if self(uid) || isOwner();
+      allow list: if isOwner();
+      allow create, update: if isOwner() && request.resource.data.role in ['owner', 'admin', 'viewer'];
+      allow delete: if isOwner();
+    }
+
+    // 접속 중 표시: 승인된 사람은 모두 보고, 자기 것만 씀
+    match /presence/{uid} {
+      allow read: if canView();
+      allow write: if canView() && self(uid);
+    }
+
+    // 명단·자리·기록: 보기는 읽기만, 관리자는 수정
+    match /roster/{d} { allow read: if canView(); allow write: if isAdmin(); }
+    match /config/{d} { allow read: if canView(); allow write: if isAdmin(); }
+    match /seats/{d}  { allow read: if canView(); allow write: if isAdmin(); }
+    match /log/{d}    { allow read: if canView(); allow write: if isAdmin(); }
+  }
+}
