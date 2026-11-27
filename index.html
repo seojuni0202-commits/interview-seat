@@ -69,6 +69,10 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{border-bottom:1px
 #nav button{display:flex;gap:8px;align-items:center;text-align:left;border:none;background:transparent;font-weight:600;color:var(--mute);padding:9px 10px}
 #nav button span{font-size:16px}#nav button:hover{background:#e9ebef}
 #nav button.act{background:var(--card);color:var(--ink);box-shadow:0 1px 3px #0001;border:1px solid var(--line)}
+#callTb td{vertical-align:middle}#callTb .ord{font-size:18px;font-weight:800;width:56px;text-align:center}#callTb tr.first td{background:#fef3c7}
+#callTb tr.pick{cursor:pointer}#callTb tr.pick:hover td{background:#eef2ff}#callTb tr.picked td{background:#e0e7ff}
+body.ro #callNext,body.ro #callPick,body.ro #callPickDone,body.ro #callPickCancel,body.ro [data-call]{display:none!important}
+.seat .ordb{background:var(--waitk);color:#fff;border-radius:4px;padding:0 4px;font-weight:800}
 /* 시간을 고르면 다른 시간 학생 자리는 가림 */
 .seat.other{opacity:.22;pointer-events:none;background:#f3f4f6!important;border-color:var(--line)!important;animation:none!important}.seat.other .nm,.seat.other .no,.seat.other .qa,.seat.other .st{visibility:hidden}
 #navTimes{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);max-height:calc(100vh - 400px);overflow:auto}
@@ -157,6 +161,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
 <div class="shell">
 <nav id="nav" aria-label="화면">
  <button data-v="seat" class="act"><span>🪑</span>자리 배치</button>
+ <button data-v="call"><span>📣</span>호명 순서 <b id="callBadge" class="badge wait" hidden></b></button>
  <button data-v="list"><span>👥</span>학생 명단</button>
  <button data-v="sum"><span>📊</span>인원 현황</button>
  <button data-v="log"><span>📝</span>자리 기록</button>
@@ -190,6 +195,12 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
  <div class="tw"><table id="lTb"></table></div>
 </section>
 <section id="v-sum" class="pane" hidden><div class="ptop"><h2>인원 현황</h2><span class="meta">명단을 고치면 모든 사람 화면에 바로 반영됩니다.</span></div><div class="tiles" id="sTiles"></div><div class="ptop"><h2>시간대별 인원</h2><span class="meta">숫자 = 명단 인원 · 괄호 = 귀가한 인원 · 줄을 누르면 그 시간 명단</span></div><div class="tw"><table id="sTb"></table></div></section>
+<section id="v-call" class="pane" hidden>
+ <div class="ptop"><h2>호명 순서 <span id="callCnt" class="meta"></span></h2>
+  <button class="pri" id="callNext">다음 사람 호명</button><button id="callPick">순서 선택</button><button id="callPickDone" hidden>순서 확정</button><button id="callPickCancel" hidden>취소</button></div>
+ <p class="meta" id="callHint" style="margin:0 0 10px">자리에서 <b>대기</b> 중인 학생을 부를 순서예요. ↑↓로 옮기거나, [순서 선택]을 누른 뒤 부를 순서대로 이름을 차례로 누르세요. 위쪽에서 시간을 고르면 그 시간 학생만 나와요.</p>
+ <div class="tw" style="max-height:none"><table id="callTb"></table></div>
+</section>
 <section id="v-perm" class="pane" hidden>
  <div class="ptop"><h2>권한 요청 <span id="reqCnt" class="meta"></span></h2><span class="meta">이름을 확인하고 직책을 골라 승인하세요.</span></div>
  <div class="tw" style="max-height:none"><table id="reqTb"></table></div>
@@ -301,6 +312,35 @@ function toggleAbsent(s){if(ROLE!=='admin'||!s||stuStatus(s))return;
  if(s.absent){delete s.absent;s.no=s.g+'-'+(S.students.filter(x=>x.t===s.t&&+x.g===+s.g&&live(x)).length);compactSlot(s.t,s.g);toast(`${s.name} 결석 취소 → ${s.no}`)}
  else{s.absent=true;delete s.hold;s.no='';compactSlot(s.t,s.g);toast(`${s.name} 결석 — ${s.t} 번호가 하나 줄었어요`)}
  render()}
+// ===== 호명 순서 =====
+function nextQ(){return Math.max(0,...Object.values(S.seats).map(z=>+z.q||0))+1}
+function waitList(){return Object.entries(S.seats).filter(([k,z])=>z.st==='wait').map(([k,z])=>({k,z,s:stu(z.sid)})).filter(o=>o.s&&slotOk(o.s))
+ .sort((a,b)=>((+a.z.q||1e9)-(+b.z.q||1e9))||String(a.z.at||'').localeCompare(String(b.z.at||''))||a.k.localeCompare(b.k))}
+function setOrder(list){const base=Math.min(...list.map(o=>+o.z.q||1e9).filter(x=>x<1e9),1);list.forEach((o,i)=>{S.seats[o.k].q=base+i})}
+let PICK=null;
+function renderCall(){const L=waitList();$('callCnt').textContent=L.length?`대기 ${L.length}명${S.slot!=='all'?' · '+S.slot:''}`:'';
+ const picking=!!PICK;$('callPick').hidden=picking;$('callPickDone').hidden=!picking;$('callPickCancel').hidden=!picking;$('callNext').hidden=picking;
+ $('callNext').disabled=!L.length;
+ const tb=$('callTb');tb.replaceChildren();
+ if(!L.length){tb.append(el('tr',null,el('td',{class:'meta',text:'대기 중인 학생이 없어요. 자리 배치에서 학생을 앉히면 여기에 순서대로 쌓여요.'})));return}
+ tb.append(el('thead',null,el('tr',null,el('th',{text:'순서'}),el('th',{text:'이름'}),el('th',{text:'번호'}),el('th',{text:'시간'}),el('th',{text:'자리'}),el('th',{text:''}))));
+ const body=el('tbody');tb.append(body);
+ L.forEach((o,i)=>{const pi=picking?PICK.indexOf(o.k):-1;
+  const ord=picking?(pi>=0?String(pi+1):'·'):String(i+1);
+  const tr=el('tr',{class:(picking?'pick'+(pi>=0?' picked':''):(i===0?'first':''))},
+   el('td',{class:'ord',text:ord}),el('td',null,el('b',{text:o.s.name}),' ',el('span',{class:'meta',text:o.s.school||''})),
+   el('td',{text:o.s.no}),el('td',{text:o.s.t}),el('td',{text:seatLabel(o.k)}),
+   el('td',null,...(picking?[]:[
+    el('button',{'data-call':'1',text:'↑',title:'한 칸 위로',onclick:()=>{if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]];setOrder(L);render()}}}),' ',
+    el('button',{'data-call':'1',text:'↓',title:'한 칸 아래로',onclick:()=>{if(i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];setOrder(L);render()}}}),' ',
+    el('button',{'data-call':'1',class:'pri',text:'호명',onclick:()=>quick(o.k)})])));
+  if(picking)tr.onclick=()=>{if(pi>=0)PICK.splice(pi,1);else PICK.push(o.k);if(PICK.length===L.length)finishPick();else renderCall()};
+  body.append(tr)})}
+function finishPick(){const L=waitList();const by=new Map(L.map(o=>[o.k,o]));const N=[...PICK.filter(k=>by.has(k)).map(k=>by.get(k)),...L.filter(o=>!PICK.includes(o.k))];PICK=null;setOrder(N);toast('호명 순서를 정했어요');render()}
+$('callPick').onclick=()=>{PICK=[];renderCall()};
+$('callPickDone').onclick=()=>finishPick();
+$('callPickCancel').onclick=()=>{PICK=null;renderCall()};
+$('callNext').onclick=()=>{const L=waitList();if(L[0])quick(L[0].k)};
 // 안 하고 감: 왔다가(또는 연락으로) 면접 안 보고 간 학생. 번호는 그대로 두고 따로 셈
 function toggleSkip(s){if(ROLE!=='admin'||!s||s.absent)return;const x=stuStatus(s);if(x&&x.gone)return;
  if(s.skip){delete s.skip;toast(`${s.name} 안 하고 감 취소`);render();return}
@@ -313,14 +353,14 @@ function doneNoSeat(s){if(ROLE!=='admin'||!s||stuStatus(s))return;delete s.hold;
 function undoDone(s){if(ROLE!=='admin'||!s)return;const n=S.log.length;S.log=S.log.filter(l=>!(l.sid===s.id&&l.st==='done'&&!l.seat));if(S.log.length!==n){toast(`${s.name} 완료 취소`);render()}}
 function bunInfo(b){if(b===1)return'1그룹';if(b===2)return'왼 1그룹 · 오 2그룹';if(b===3)return'2그룹';return({'0':'공용','1':'1그룹','2':'2그룹','-1':'사용 안 함'})[S.g4]}
 function bunColor(b){return b===1?'var(--g1)':b===3?'var(--g2)':b===2?'var(--ink)':'var(--mute)'}
-function render(){
+function render(){const RK=new Map(waitList().map((o,i)=>[o.k,i+1]));
  const g=$('grid');g.innerHTML='';
  for(let b=1;b<=3;b++){const h=document.createElement('div');h.className='bunhead';h.style.color=bunColor(b);h.innerHTML=`${b}분단<small>${bunInfo(b)}</small>`;g.appendChild(h)}
  for(let r=1;r<=7;r++)for(let b=1;b<=3;b++){const d=document.createElement('div');d.className='desk';
   for(let p=1;p<=3;p++){const e=document.createElement('div');const k=sid(r,b,p);
    if(!usable(b,p)){e.className='seat off';e.textContent='빈 책상';e.title='앉지 않는 자리'}else{const z=S.seats[k];const s=z&&stu(z.sid);const gg=seatGroup(b,p);const st=z?z.st:'empty';
     const oth=s&&S.slot!=='all'&&s.t!==S.slot;e.className=`seat on g${gg} s-${st}${oth?' other':''}`;e.title=oth?`${seatLabel(k)} — 다른 시간(${s.t}) 학생`:seatLabel(k);
-    e.innerHTML=`<div class="top"><span>${r}줄</span><span class="st">${ST[st]}</span></div>`+(s?`<div class="nm">${s.name}</div><div class="no">${s.no}${s.t&&S.slot==='all'?' · '+s.t:''}</div><button class="qa">${NEXT[st][1]}</button>`:'');
+    e.innerHTML=`<div class="top"><span>${r}줄${RK.get(k)?` <b class="ordb" title="호명 순서">${RK.get(k)}</b>`:''}</span><span class="st">${ST[st]}</span></div>`+(s?`<div class="nm">${s.name}</div><div class="no">${s.no}${s.t&&S.slot==='all'?' · '+s.t:''}</div><button class="qa">${NEXT[st][1]}</button>`:'');
     e.onclick=()=>openSeat(k);
     const q=e.querySelector('.qa');if(q)q.onclick=ev=>{ev.stopPropagation();quick(k)}}
    d.appendChild(e)}
@@ -329,7 +369,7 @@ function render(){
 function toast(m){const x=$('toast');x.textContent=m;x.classList.add('on');clearTimeout(x._t);x._t=setTimeout(()=>x.classList.remove('on'),1800)}
 function quick(k){const z=S.seats[k];const s=stu(z.sid);const n=NEXT[z.st][0];
  if(n==='empty'){addLog(k,s,'empty');delete S.seats[k];toast(`${s.name} 귀가 처리, 자리 비움`)}else{z.st=n;z.at=now();addLog(k,s,n);toast(`${s.name} → ${ST[n]}`)}render()}
-function renderStats(){const z=Object.values(S.seats);const c=k=>z.filter(x=>x.st===k).length;
+function renderStats(){const z=Object.values(S.seats);{const n=waitList().length,b=$('callBadge');if(b){b.hidden=!n;b.textContent=n}}const c=k=>z.filter(x=>x.st===k).length;
  const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip hold" title="나중에 오기로 한 학생">보류<b>${S.students.filter(s=>s.hold&&!stuStatus(s)).length}</b></span><span class="chip absent" title="안 오는 학생(번호에서 빠짐)">결석<b>${S.students.filter(s=>s.absent).length}</b></span><span class="chip skip" title="면접을 안 하고 간 학생">안 하고 감<b>${S.students.filter(s=>s.skip).length}</b></span><span class="chip" title="아직 안 왔고 보류·결석·안 하고 감도 아닌 학생">아직 안 옴<b>${S.students.filter(s=>live(s)&&!stuStatus(s)&&!s.hold&&!s.skip).length}</b></span><span class="chip" style="font-weight:700" title="결석 제외">총 인원<b>${S.students.filter(live).length}</b></span>`}
 let F='all';
 function slotOk(s){return S.slot==='all'||s.t===S.slot}
@@ -346,7 +386,7 @@ function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML=
   const dk=d.querySelector('[data-a=skip]');if(dk)dk.onclick=()=>toggleSkip(s);
   L.appendChild(d)})}
 function freeSeatFor(g){const L=seatOrder().filter(o=>!S.seats[o.id]);return L.find(o=>seatGroup(o.b,o.p)===g)||L.find(o=>seatGroup(o.b,o.p)===0)}
-function sit(s){const o=freeSeatFor(s.g);if(!o)return alert(s.g+'그룹 빈 자리가 없습니다.');delete s.hold;delete s.skip;S.seats[o.id]={sid:s.id,st:'wait',at:now()};addLog(o.id,s,'wait');toast(`${s.name} → ${seatLabel(o.id)}`);render()}
+function sit(s){const o=freeSeatFor(s.g);if(!o)return alert(s.g+'그룹 빈 자리가 없습니다.');delete s.hold;delete s.skip;S.seats[o.id]={sid:s.id,st:'wait',at:now(),q:nextQ()};addLog(o.id,s,'wait');toast(`${s.name} → ${seatLabel(o.id)}`);render()}
 $('autoBtn').onclick=()=>{const s=S.students.find(s=>slotOk(s)&&!stuStatus(s)&&!s.hold&&!s.skip&&live(s));if(!s)return alert('이 시간대에 앉힐 학생이 없습니다.');sit(s)};
 
 let cur=null,curSt=null;
@@ -411,10 +451,10 @@ $('lClose').onclick=()=>{$('ldlg').close();render()};
 // ===== 사이드바 화면 =====
 let VIEW='seat';const cmpNo=a=>String(a).split('-').map(Number).reduce((x,y)=>x*100+y,0);
 function show(v){VIEW=v;document.querySelectorAll('#nav > button[data-v]').forEach(b=>b.classList.toggle('act',b.dataset.v===v));
- ['seat','list','sum','log','perm'].forEach(k=>$('v-'+k).hidden=k!==v);renderView()}
+ ['seat','call','list','sum','log','perm'].forEach(k=>$('v-'+k).hidden=k!==v);renderView()}
 document.querySelectorAll('#nav > button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('logBtn').onclick=()=>show('log');
-function renderView(){if(VIEW==='list')renderTable();else if(VIEW==='sum')renderSum();else if(VIEW==='log')renderLog();else if(VIEW==='perm')renderPerm()}
+function renderView(){if(VIEW==='list')renderTable();else if(VIEW==='sum')renderSum();else if(VIEW==='log')renderLog();else if(VIEW==='perm')renderPerm();else if(VIEW==='call')renderCall()}
 let PD={requests:[],members:[]};
 window.onPermData=d=>{PD=d;$('navPerm').hidden=false;const n=d.requests.length;const b=$('reqBadge');b.hidden=!n;b.textContent=n;if(VIEW==='perm')renderPerm()};
 function el(t,a,...k){const n=document.createElement(t);if(a)for(const[x,y]of Object.entries(a)){if(x==='text')n.textContent=y;else if(x.startsWith('on'))n[x]=y;else n.setAttribute(x,y)}k.forEach(c=>c!=null&&n.append(c));return n}
