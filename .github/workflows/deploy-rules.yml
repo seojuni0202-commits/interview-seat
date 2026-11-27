@@ -1,0 +1,25 @@
+# firestore.rules 가 바뀌어 main 에 올라오면 Firebase 보안 규칙을 자동으로 적용합니다.
+# 필요한 비밀값 FIREBASE_SA 는 setup.mjs 가 처음 한 번 넣어 둡니다.
+name: Deploy Firestore rules
+on:
+  push:
+    branches: [main]
+    paths: [firestore.rules, .github/workflows/deploy-rules.yml]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy rules
+        env:
+          SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          if [ -z "$SA" ]; then echo "FIREBASE_SA 비밀값이 없어요. setup.mjs 를 한 번 실행해 주세요."; exit 1; fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          PROJECT=$(node -e "const s=require('fs').readFileSync('config.js','utf8');console.log(JSON.parse(s.slice(s.indexOf('{'),s.lastIndexOf('}')+1)).projectId)")
+          npx --yes firebase-tools@13.29.1 deploy --only firestore:rules --project "$PROJECT" --non-interactive

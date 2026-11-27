@@ -4,3 +4,5 @@ node_modules/
 *.xlsx
 firebase-debug.log
 firestore-debug.log
+*.zip
+update-*/

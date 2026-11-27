@@ -153,8 +153,47 @@ if (!run("git config user.email", { quiet: true, allowFail: true }).out.trim()) 
   const uid = run("gh api user -q .id", { quiet: true }).out.trim();
   run(`git config user.email "${uid}+${login}@users.noreply.github.com"`);
 }
+// 자동 업데이트 준비: 규칙 적용용 서비스 계정을 만들고 GitHub 비밀값으로 넣어 둠
+async function setupAutoDeploy() {
+  if (st.autodeploy) return;
+  say("자동 업데이트 준비 (GitHub에 규칙이 올라오면 자동 적용)");
+  try {
+    const tk = await token();
+    for (const svc of ["iam.googleapis.com", "cloudresourcemanager.googleapis.com"]) {
+      await g("POST", `https://serviceusage.googleapis.com/v1/projects/${P}/services/${svc}:enable`, {}, tk);
+    }
+    await sleep(10000);
+    const email = `seat-deployer@${P}.iam.gserviceaccount.com`;
+    const c = await g("POST", `https://iam.googleapis.com/v1/projects/${P}/serviceAccounts`, { accountId: "seat-deployer", serviceAccount: { displayName: "seat rules deployer" } }, tk);
+    if (!c.ok && c.status !== 409) throw new Error("sa " + c.text);
+    await sleep(5000);
+    const pol = await g("POST", `https://cloudresourcemanager.googleapis.com/v1/projects/${P}:getIamPolicy`, {}, tk);
+    if (!pol.ok) throw new Error("policy " + pol.text);
+    const policy = JSON.parse(pol.text);
+    policy.bindings = policy.bindings || [];
+    for (const role of ["roles/firebaserules.admin", "roles/firebase.viewer", "roles/serviceusage.serviceUsageViewer", "roles/serviceusage.serviceUsageConsumer"]) {
+      let b = policy.bindings.find((x) => x.role === role && !x.condition);
+      if (!b) { b = { role, members: [] }; policy.bindings.push(b); }
+      if (!b.members.includes(`serviceAccount:${email}`)) b.members.push(`serviceAccount:${email}`);
+    }
+    const set = await g("POST", `https://cloudresourcemanager.googleapis.com/v1/projects/${P}:setIamPolicy`, { policy }, tk);
+    if (!set.ok) throw new Error("setpolicy " + set.text);
+    const key = await g("POST", `https://iam.googleapis.com/v1/projects/${P}/serviceAccounts/${email}/keys`, {}, tk);
+    if (!key.ok) throw new Error("key " + key.text);
+    const json = Buffer.from(JSON.parse(key.text).privateKeyData, "base64").toString("utf8");
+    const r = spawnSync(`gh secret set FIREBASE_SA --repo ${st.repo}`, { shell: true, input: json, encoding: "utf8" });
+    if (r.status !== 0) throw new Error("secret " + r.stderr);
+    st.autodeploy = true; save();
+    ok("자동 업데이트 준비됨");
+  } catch (e) {
+    console.log("  자동 업데이트 준비를 못 했어요(설치에는 지장 없어요). 다음에 다시 실행하면 다시 시도해요.");
+    console.log("  " + String(e.message || e).slice(0, 300));
+  }
+}
+
+if (st.repo) await setupAutoDeploy();
 run("git add -A");
-run('git commit -q -m "면접 자리 배치 설치"', { allowFail: true, quiet: true });
+run('git commit -q -m "면접 자리 배치 업데이트"', { allowFail: true, quiet: true });
 
 if (!st.repo) {
   let name = REPO_DEFAULT;
@@ -162,8 +201,10 @@ if (!st.repo) {
   say(`GitHub 저장소 만들고 올리기 (${login}/${name})`);
   run(`gh repo create ${name} --public --source . --remote origin --push`);
   st.repo = `${login}/${name}`; save();
+  await setupAutoDeploy();
 } else {
   say(`GitHub에 올리기 (${st.repo})`);
+  run("git pull --rebase -q origin main", { allowFail: true });
   run("git push -u origin main");
 }
 
