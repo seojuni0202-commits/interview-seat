@@ -49,7 +49,23 @@ async function start() {
 async function memberOf(fs, uid) {
   try { const s = await getDoc(doc(fs, "members", uid)); return s.exists() ? s.data() : null; } catch (e) { return null; }
 }
-const cleanName = (v) => String(v || "").replace(/[<>&"'`]/g, "").trim().slice(0, 20);
+const cleanName = (v) => String(v || "").replace(/[<>&"'`\/]/g, "").replace(/^\.+|\.+$/g, "").trim().slice(0, 20);
+const SAME_NAME = (n) => `'${n}' 이름이 이미 있어요(동명이인). 이름 뒤에 B를 붙여서 다시 요청해 주세요. 예: ${n}B`;
+
+// 이름 중복 막기: names/{이름} 문서를 먼저 차지한 사람만 그 이름을 씀
+async function claimName(fs, uid, name, forUid) {
+  const owner = forUid || uid;
+  try {
+    const s = await getDoc(doc(fs, "names", name));
+    if (s.exists()) return s.data().uid === owner;
+    await setDoc(doc(fs, "names", name), { uid: owner });
+    return true;
+  } catch (e) { return false; }
+}
+async function releaseName(fs, uid, name) {
+  if (!name) return;
+  try { const s = await getDoc(doc(fs, "names", name)); if (s.exists() && s.data().uid === uid) await deleteDoc(doc(fs, "names", name)); } catch (e) {}
+}
 
 function showGate(msg, btnText, wait) {
   $("gate").hidden = false; $("gateMsg").textContent = msg; $("gateBtn").textContent = btnText;
@@ -62,6 +78,7 @@ function ownerName(fs, uid) {
     showGate("소유자로 확인됐어요. 접속자 목록에 보일 이름을 적어 주세요.", "시작하기");
     const go = async () => {
       const name = cleanName($("gateName").value); if (!name) return $("gateName").focus();
+      if (!(await claimName(fs, uid, name))) { $("gateWait").hidden = false; $("gateWait").textContent = SAME_NAME(name); return; }
       const m = { name, role: "owner", at: serverTimestamp() };
       await setDoc(doc(fs, "members", uid), m);
       $("gate").hidden = true; resolve(m);
@@ -81,7 +98,13 @@ async function requestAccess(fs, uid) {
     const name = cleanName($("gateName").value); if (!name) return $("gateName").focus();
     $("gateBtn").disabled = true;
     try {
+      if (!(await claimName(fs, uid, name))) {
+        $("gateWait").hidden = false; $("gateWait").textContent = SAME_NAME(name);
+        $("gateName").value = name + "B"; $("gateBtn").disabled = false; $("gateName").focus(); return;
+      }
+      if (sent && sent.name !== name) await releaseName(fs, uid, sent.name);
       await setDoc(doc(fs, "requests", uid), { name, at: serverTimestamp() });
+      sent = { name };
       $("gateBtn").textContent = "이름 고쳐서 다시 요청"; $("gateWait").hidden = false; $("gateWait").textContent = waitMsg(name);
     } catch (e) { $("gateWait").hidden = false; $("gateWait").textContent = "요청을 보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요."; }
     $("gateBtn").disabled = false;
@@ -133,8 +156,10 @@ function startAdmin(fs) {
     st.requests = qs.docs.map((d) => ({ uid: d.id, name: cleanName(d.data().name) || "이름 없음", at: ms(d.data().at) })).sort((a, b) => a.at - b.at);
     push();
   }, () => {});
+  let backfilled = false;
   onSnapshot(collection(fs, "members"), (qs) => {
     st.members = qs.docs.map((d) => ({ uid: d.id, name: cleanName(d.data().name) || "이름 없음", role: d.data().role })).sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    if (!backfilled) { backfilled = true; st.members.forEach((m) => claimName(fs, null, m.name, m.uid)); }
     push();
   }, () => {});
   window.PERM = {
@@ -144,9 +169,9 @@ function startAdmin(fs) {
       b.delete(doc(fs, "requests", uid));
       await b.commit();
     },
-    reject: (uid) => deleteDoc(doc(fs, "requests", uid)),
+    reject: async (uid, name) => { await deleteDoc(doc(fs, "requests", uid)); await releaseName(fs, uid, name); },
     setRole: (uid, name, role) => setDoc(doc(fs, "members", uid), { name: cleanName(name), role, at: serverTimestamp() }),
-    revoke: (uid) => deleteDoc(doc(fs, "members", uid)),
+    revoke: async (uid, name) => { await deleteDoc(doc(fs, "members", uid)); await releaseName(fs, uid, name); },
   };
   push();
 }

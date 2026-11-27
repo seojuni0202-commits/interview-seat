@@ -19,6 +19,14 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid;
     }
 
+    // 이름 중복 막기: 이름마다 한 사람만. 있는지 여부만 확인 가능(목록은 못 봄)
+    match /names/{n} {
+      allow get: if signedIn();
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['uid'])
+        && (request.resource.data.uid == request.auth.uid || isOwner());
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isOwner());
+    }
+
     // 권한 요청: 본인이 이름만 적어 보냄. 소유자가 보고 승인·거절
     match /requests/{uid} {
       allow get: if self(uid) || isOwner();
