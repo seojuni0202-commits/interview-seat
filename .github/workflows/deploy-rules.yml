@@ -1,5 +1,5 @@
 # firestore.rules 가 바뀌어 main 에 올라오면 Firebase 보안 규칙을 자동으로 적용합니다.
-# 필요한 비밀값 FIREBASE_SA 는 setup.mjs 가 처음 한 번 넣어 둡니다.
+# 필요한 비밀값 FIREBASE_SA 는 setup.mjs 가 처음 한 번 넣어 둡니다. (자동 적용 시험 2)
 name: Deploy Firestore rules
 on:
   push:
