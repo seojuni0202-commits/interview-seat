@@ -83,6 +83,9 @@ body.ro #callNext,body.ro #callPick,body.ro #callPickDone,body.ro #callPickCance
 .nextbox .nx button{min-height:30px;padding:3px 10px;font-size:12px;flex:none}.nextbox .aw{font-size:12px;color:var(--mute)}.nextbox .aw button{min-height:26px;padding:2px 8px;font-size:11px}
 .badge.away{background:#e5e7eb;color:#374151}
 body.ro .nextbox button,body.ro #dAway{display:none!important}
+.bunsw{display:block;margin:4px auto 0;min-height:26px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--g1);border-color:var(--g1)}
+.seat.sw{outline:2px dashed var(--g1);outline-offset:-3px}
+body.ro .bunsw,body.ro #dGrpRow{display:none!important}
 /* 시간을 고르면 다른 시간 학생 자리는 가림 */
 .seat.other{opacity:.22;pointer-events:none;background:#f3f4f6!important;border-color:var(--line)!important;animation:none!important}.seat.other .nm,.seat.other .no,.seat.other .qa,.seat.other .st{visibility:hidden}
 #navTimes{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);max-height:calc(100vh - 400px);overflow:auto}
@@ -223,6 +226,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
 
 <dialog id="dlg"><h3 id="dTitle"></h3>
  <label>시간 → 명찰 번호 (온 순서대로)</label><select id="dTN" class="hid" tabindex="-1"></select><div class="tnrow tm" id="dTimeBox"></div><div class="tnrow" id="dNoBox" style="margin-top:6px"></div><label>이름 (그 시간대에서 한 명)</label><select id="dStu" class="hid" tabindex="-1"></select><div class="pick" id="dStuBox"></div>
+ <div class="row" id="dGrpRow" hidden style="margin-top:6px;align-items:center"><span class="meta">이 자리</span><select id="dGrp" style="flex:1"><option value="2">2그룹 자리 (기본)</option><option value="1">1그룹 학생도 앉게 → 1그룹 자리</option></select></div>
  <label>상태</label>
  <div class="row" style="margin-top:0">
   <button class="stbtn" data-s="empty">비어있음</button><button class="stbtn" data-s="wait" style="background:var(--wait)">대기</button>
@@ -264,7 +268,7 @@ function applyFixes(x){FIXES.forEach(f=>x.students.forEach(s=>{if(s.name===f.nam
  COMPACT.forEach(([ct,cg])=>{x.students.filter(s=>s.t===ct&&+s.g===cg).sort((a,b)=>cmpNo0(a.no)-cmpNo0(b.no)).forEach((s,i)=>s.no=cg+'-'+(i+1))});return x}
 function cmpNo0(a){return String(a).split('-').map(Number).reduce((x,y)=>x*100+y,0)}
 function load(){
- return {students:SEED.map((s,i)=>({...s,id:'s'+i})),seats:{},log:[],g4:'0',slot:'all',seq:SEED.length}}
+ return {students:SEED.map((s,i)=>({...s,id:'s'+i})),seats:{},log:[],g4:'0',sg:{},slot:'all',seq:SEED.length}}
 // ===== 여러 컴퓨터 공유(claude.ai 공유 저장소) =====
 let DB=null,READY=false;const SY={roster:'',g4:'0',seats:{},log:{}};const LD={roster:0,cfg:0,seats:0,log:0};const QS={};
 const clean=v=>typeof v==='string'?v.replace(/[<>&"'`]/g,''):v;
@@ -274,7 +278,7 @@ function q(key,fn){QS[key]=(QS[key]||Promise.resolve()).then(fn).catch(e=>toast(
 function commit(){
  const r=JSON.stringify({students:S.students,seq:S.seq});
  if(r!==SY.roster){SY.roster=r;q('roster',()=>DB.doc('roster/main').set(JSON.parse(r)))}
- if(S.g4!==SY.g4){SY.g4=S.g4;const v=S.g4;q('cfg',()=>DB.doc('config/main').set({g4:v}))}
+ {const c=JSON.stringify({g4:S.g4,sg:S.sg||{}});if(c!==SY.cfg){SY.cfg=c;SY.g4=S.g4;q('cfg',()=>DB.doc('config/main').set(JSON.parse(c)))}}
  new Set([...Object.keys(S.seats),...Object.keys(SY.seats)]).forEach(k=>{const a=S.seats[k]?JSON.stringify(S.seats[k]):null;
   if(a!==(SY.seats[k]??null)){if(a)SY.seats[k]=a;else delete SY.seats[k];q('seat'+k,()=>a?DB.doc('seats/'+k).set(JSON.parse(a)):DB.doc('seats/'+k).delete())}});
  const cur={};S.log.forEach(l=>{if(!l._id){l._id='L'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);l.ts=l.ts||Date.now()}cur[l._id]=JSON.stringify(l)});
@@ -295,7 +299,7 @@ function applyRole(){document.body.classList.toggle('ro',ROLE!=='admin');const c
  DB.doc('roster/main').onSnapshot(s=>{if(!s.exists&&s.metadata.fromCache)return;const d=s.exists?s.data():{};S.students=(d.students||[]).map(cleanObj);S.seq=d.seq||S.students.length;
   SY.roster=JSON.stringify({students:S.students,seq:S.seq});
   if(!s.exists&&SEED.length){S.students=SEED.map((x,i)=>({...x,id:'s'+i}));S.seq=SEED.length;SY.roster=''}LD.roster=1;if(!s.metadata.fromCache)clearTimeout(tm);refresh()},fail);
- DB.doc('config/main').onSnapshot(s=>{S.g4=s.exists&&s.data().g4!=null?String(s.data().g4):'0';SY.g4=S.g4;LD.cfg=1;refresh()},fail);
+ DB.doc('config/main').onSnapshot(s=>{S.g4=s.exists&&s.data().g4!=null?String(s.data().g4):'0';SY.g4=S.g4;{const sg=s.exists&&s.data().sg;S.sg={};if(sg&&typeof sg==='object')for(const k in sg)if(/^\d-\d-\d$/.test(k)&&+sg[k]===1)S.sg[k]=1}SY.cfg=JSON.stringify({g4:S.g4,sg:S.sg});LD.cfg=1;refresh()},fail);
  DB.collection('seats').onSnapshot(qs=>{S.seats={};SY.seats={};qs.docs.forEach(x=>{const v=cleanObj(x.data());S.seats[x.id]=v;SY.seats[x.id]=JSON.stringify(v)});LD.seats=1;refresh()},fail);
  DB.collection('log').orderBy('ts').limit(1000).onSnapshot(qs=>{SY.log={};S.log=qs.docs.map(x=>{const v={...cleanObj(x.data()),_id:x.id};SY.log[x.id]=JSON.stringify(v);return v});LD.log=1;refresh()},fail);
 })();
@@ -305,7 +309,11 @@ async function saveXlsx(wb,name){let dl=null;try{dl=window.claude&&window.claude
 const now=()=>new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
 const $=id=>document.getElementById(id);
 // 좌석: 줄 r(1~7), 분단 b(1~4), 자리 p(1~3). 홀수 자리(1,3)만 사용
-function seatGroup(b,p){if(b===1)return 1;if(b===2)return p===1?1:2;if(b===3)return 2;return +S.g4}
+function baseGroup(b,p){if(b===1)return 1;if(b===2)return p===1?1:2;if(b===3)return 2;return +S.g4}
+// 2그룹 자리는 소유자·관리자가 1그룹 자리로 바꿀 수 있음(S.sg[자리]=1). 처음엔 모두 기본(2그룹)
+function seatGroup(b,p,r){const g=baseGroup(b,p);if(g===2&&r&&S.sg&&+S.sg[`${r}-${b}-${p}`]===1)return 1;return g}
+function setSeatGroup(k,g){if(ROLE!=='admin')return;S.sg=S.sg||{};if(+g===1)S.sg[k]=1;else delete S.sg[k];render()}
+function toggleBunGroup(b){if(ROLE!=='admin')return;const L=seatOrder().filter(o=>o.b===b&&baseGroup(o.b,o.p)===2);const allSw=L.length&&L.every(o=>S.sg&&+S.sg[o.id]===1);S.sg=S.sg||{};L.forEach(o=>{if(allSw)delete S.sg[o.id];else S.sg[o.id]=1});toast(allSw?`${b}분단 2그룹 자리를 원래대로 돌렸어요`:`${b}분단 2그룹 자리를 모두 1그룹 자리로 바꿨어요`);render()}
 function usable(b,p){return p%2===1&&!(b===4&&S.g4==='-1')}
 const sid=(r,b,p)=>`${r}-${b}-${p}`;
 function seatOrder(){const L=[];for(let r=1;r<=7;r++)for(let b=1;b<=3;b++)for(const p of[1,3])if(usable(b,p))L.push({r,b,p,id:sid(r,b,p)});return L}
@@ -381,11 +389,11 @@ function bunInfo(b){if(b===1)return'1그룹';if(b===2)return'왼 1그룹 · 오 
 function bunColor(b){return b===1?'var(--g1)':b===3?'var(--g2)':b===2?'var(--ink)':'var(--mute)'}
 function render(){const RK=new Map(callable().map((o,i)=>[o.k,i+1]));
  const g=$('grid');g.innerHTML='';
- for(let b=1;b<=3;b++){const h=document.createElement('div');h.className='bunhead';h.style.color=bunColor(b);h.innerHTML=`${b}분단<small>${bunInfo(b)}</small>`;g.appendChild(h)}
+ for(let b=1;b<=3;b++){const h=document.createElement('div');h.className='bunhead';h.style.color=bunColor(b);h.innerHTML=`${b}분단<small>${bunInfo(b)}</small>`;{const L=seatOrder().filter(o=>o.b===b&&baseGroup(o.b,o.p)===2);const n=L.filter(o=>S.sg&&+S.sg[o.id]===1).length;if(L.length){if(n){const t=document.createElement('small');t.style.color='var(--g1)';t.textContent=`(1그룹으로 바꾼 자리 ${n}개)`;h.appendChild(t)}const bt=document.createElement('button');bt.type='button';bt.className='bunsw';bt.textContent=n===L.length?'2그룹 자리로 되돌리기':'2그룹 자리 → 1그룹';bt.title='이 분단의 2그룹 자리에 1그룹 학생도 앉게 바꿔요. 자리를 눌러 한 자리씩 바꿀 수도 있어요.';bt.onclick=()=>toggleBunGroup(b);h.appendChild(bt)}}g.appendChild(h)}
  for(let r=1;r<=7;r++)for(let b=1;b<=3;b++){const d=document.createElement('div');d.className='desk';
   for(let p=1;p<=3;p++){const e=document.createElement('div');const k=sid(r,b,p);
-   if(!usable(b,p)){e.className='seat off';e.textContent='빈 책상';e.title='앉지 않는 자리'}else{const z=S.seats[k];const s=z&&stu(z.sid);const gg=seatGroup(b,p);const st=z?z.st:'empty';
-    const oth=s&&S.slot!=='all'&&s.t!==S.slot;e.className=`seat on g${gg} s-${st}${oth?' other':''}${z&&z.away?' away':''}`;e.title=oth?`${seatLabel(k)} — 다른 시간(${s.t}) 학생`:seatLabel(k);
+   if(!usable(b,p)){e.className='seat off';e.textContent='빈 책상';e.title='앉지 않는 자리'}else{const z=S.seats[k];const s=z&&stu(z.sid);const gg=seatGroup(b,p,r);const st=z?z.st:'empty';
+    const oth=s&&S.slot!=='all'&&s.t!==S.slot;e.className=`seat on g${gg} s-${st}${oth?' other':''}${z&&z.away?' away':''}${gg!==baseGroup(b,p)?' sw':''}`;e.title=oth?`${seatLabel(k)} — 다른 시간(${s.t}) 학생`:seatLabel(k);
     e.innerHTML=`<div class="top"><span>${r}줄${RK.get(k)?` <b class="ordb" title="호명 순서">${RK.get(k)}</b>`:''}</span><span class="st">${z&&z.away?'자리비움':ST[st]}</span></div>`+(s?`<div class="nm">${s.name}</div>${s.memo?`<div class="memo" title="${s.memo}">📝 ${s.memo}</div>`:''}<div class="no">${s.no}${s.t&&S.slot==='all'?' · '+s.t:''}</div><button class="qa">${NEXT[st][1]}</button>`:'');
     e.onclick=()=>openSeat(k);
     const q=e.querySelector('.qa');if(q)q.onclick=ev=>{ev.stopPropagation();quick(k)}}
@@ -411,12 +419,12 @@ function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML=
   const da=d.querySelector('[data-a=absent]');if(da)da.onclick=()=>toggleAbsent(s);
   const dk=d.querySelector('[data-a=skip]');if(dk)dk.onclick=()=>toggleSkip(s);
   L.appendChild(d)})}
-function freeSeatFor(g){const L=seatOrder().filter(o=>!S.seats[o.id]);return L.find(o=>seatGroup(o.b,o.p)===g)||L.find(o=>seatGroup(o.b,o.p)===0)}
+function freeSeatFor(g){const L=seatOrder().filter(o=>!S.seats[o.id]);return L.find(o=>seatGroup(o.b,o.p,o.r)===g)||L.find(o=>seatGroup(o.b,o.p,o.r)===0)}
 function sit(s){const o=freeSeatFor(s.g);if(!o)return alert(s.g+'그룹 빈 자리가 없습니다.');delete s.hold;delete s.skip;S.seats[o.id]={sid:s.id,st:'wait',at:now(),q:nextQ()};addLog(o.id,s,'wait');toast(`${s.name} → ${seatLabel(o.id)}`);render()}
 $('autoBtn').onclick=()=>{const s=S.students.find(s=>slotOk(s)&&!stuStatus(s)&&!s.hold&&!s.skip&&live(s));if(!s)return alert('이 시간대에 앉힐 학생이 없습니다.');sit(s)};
 
 let cur=null,curSt=null;
-function openSeat(k){cur=k;const z=S.seats[k];curSt=z?z.st:'empty';const[r,b,p]=k.split('-').map(Number);const gg=seatGroup(b,p);
+function openSeat(k){cur=k;const z=S.seats[k];curSt=z?z.st:'empty';const[r,b,p]=k.split('-').map(Number);const gg=seatGroup(b,p,r);
  $('dTitle').textContent=seatLabel(k)+(gg?` (${gg}그룹)`:' (공용)');
  const sel=$('dStu');sel.innerHTML='<option value="">— 없음 —</option>';
  S.students.filter(s=>!gg||s.g===gg).forEach(s=>{const x=stuStatus(s);const o=document.createElement('option');o.value=s.id;
@@ -573,7 +581,7 @@ $('autoBtn').onclick=()=>openArrive(null);
 const _rl=renderList;renderList=function(){_rl();$('list').querySelectorAll('[data-a=sit]').forEach((b,i)=>{const nm=b.closest('.stu').querySelector('b').textContent;const s=S.students.find(x=>x.name===nm&&!arrived(x));if(s)b.onclick=()=>openArrive(s)})};
 const _rt=renderTable;renderTable=function(){_rt();$('lTb').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>openArrive(stu(b.dataset.s)))};
 // 자리 창: 시간·번호 먼저, 이름은 그 안에서
-const _os=openSeat;openSeat=function(k){_os(k);const z=S.seats[k];const s=z&&stu(z.sid);const[r,b,p]=k.split('-').map(Number);const gg=seatGroup(b,p);
+const _os=openSeat;openSeat=function(k){_os(k);const z=S.seats[k];const s=z&&stu(z.sid);const[r,b,p]=k.split('-').map(Number);const gg=seatGroup(b,p,r);
  fillTN($('dTN'),gg,s?s.t+'|'+s.no:null,s?s.id:null);fillNames($('dStu'),$('dTN').value,s?s.id:null)};
 $('dTN').onchange=()=>{const z=S.seats[cur];fillNames($('dStu'),$('dTN').value,z?z.sid:null);if($('dStu').value&&curSt==='empty'){curSt='wait';markSt()}};
 const _ds=$('dSave').onclick;$('dSave').onclick=()=>{const id=$('dStu').value,tn=$('dTN').value;if(id&&tn&&curSt!=='empty')giveNo(stu(id),tn.split('|')[1]);_ds()};
@@ -629,7 +637,8 @@ function tnPick(sel,tBox,nBox){const opts=[...sel.options].filter(o=>o.value);co
 arriveUI=function(){tnPick($('aTN'),$('aTimeBox'),$('aNoBox'));mirrorNames($('aName'),$('aNameBox'));aInfo()};
 const _os3=openSeat;openSeat=function(k){$('dTimeBox')._t=null;_os3(k);tnPick($('dTN'),$('dTimeBox'),$('dNoBox'))};
 const _osRO=openSeat;openSeat=function(k){if(ROLE!=='admin')return;_osRO(k)};
-const _osMemo=openSeat;openSeat=function(k){_osMemo(k);if(ROLE!=='admin')return;const z=S.seats[k];const s=z&&stu(z.sid);$('dMemo').value=s?(s.memo||''):'';$('dMemo').disabled=!s;$('dAway').hidden=!z;$('dAway').textContent=z&&z.away?'자리 복귀':'자리비움'};
+const _osMemo=openSeat;openSeat=function(k){_osMemo(k);if(ROLE!=='admin')return;{const[r,b,p]=k.split('-').map(Number);const base=baseGroup(b,p);$('dGrpRow').hidden=base!==2;$('dGrp').value=String(seatGroup(b,p,r))}const z=S.seats[k];const s=z&&stu(z.sid);$('dMemo').value=s?(s.memo||''):'';$('dMemo').disabled=!s;$('dAway').hidden=!z;$('dAway').textContent=z&&z.away?'자리 복귀':'자리비움'};
+$('dGrp').onchange=()=>{const k=cur,v=$('dGrp').value;$('dlg').close();setSeatGroup(k,v);toast(v==='1'?'이 자리를 1그룹 자리로 바꿨어요':'이 자리를 2그룹 자리로 되돌렸어요');openSeat(k)};
 $('dAway').onclick=()=>{const z=S.seats[cur];const t=z&&stu(z.sid);const m=$('dMemo').value.trim().slice(0,200);if(t&&(t.memo||'')!==m)t.memo=clean(m);$('dlg').close();toggleAway(cur)};
 const _dsHold=$('dSave').onclick;$('dSave').onclick=()=>{{const id=$('dStu').value,m=$('dMemo').value.trim().slice(0,200);const t=id&&stu(id);if(t&&(t.memo||'')!==m)t.memo=clean(m)}if(curSt==='hold'){const z=S.seats[cur];const s=z&&stu(z.sid);$('dlg').close();if(s)toggleHold(s);else toast('보류할 학생이 없는 자리예요');return}_dsHold()};
 $('menuBtn').onclick=e=>{e.stopPropagation();$('menu').classList.toggle('open')};document.addEventListener('click',()=>$('menu').classList.remove('open'));
