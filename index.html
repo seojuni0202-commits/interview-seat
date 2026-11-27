@@ -69,6 +69,12 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{border-bottom:1px
 #nav button{display:flex;gap:8px;align-items:center;text-align:left;border:none;background:transparent;font-weight:600;color:var(--mute);padding:9px 10px}
 #nav button span{font-size:16px}#nav button:hover{background:#e9ebef}
 #nav button.act{background:var(--card);color:var(--ink);box-shadow:0 1px 3px #0001;border:1px solid var(--line)}
+#navTimes{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);max-height:calc(100vh - 400px);overflow:auto}
+#navTimes .h{font-size:11px;color:var(--mute);font-weight:700;padding:2px 10px 4px;letter-spacing:.5px}
+#navTimes button{justify-content:space-between;padding:6px 10px;min-height:32px;font-size:13px}
+#navTimes button small{font-size:11px;color:var(--mute);font-weight:500;font-variant-numeric:tabular-nums}
+#navTimes button.act small{color:var(--ink)}
+@media(max-width:800px){#navTimes{flex-direction:row;flex-wrap:nowrap;margin:0;padding:0 0 0 8px;border-top:0;border-left:1px solid var(--line);max-height:none;overflow:visible}#navTimes .h{display:none}}
 .views{flex:1;min-width:0}
 .views main{padding-left:6px}
 .pane{margin:10px 16px 16px 6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
@@ -153,6 +159,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
  <button data-v="sum"><span>📊</span>인원 현황</button>
  <button data-v="log"><span>📝</span>자리 기록</button>
  <button data-v="perm" id="navPerm" hidden><span>🔑</span>권한 관리 <b id="reqBadge" class="badge fb" hidden></b></button>
+ <div id="navTimes" aria-label="시간대별 학생 보기"></div>
 </nav>
 <div class="views">
 <main id="v-seat">
@@ -365,7 +372,7 @@ $('sClose').onclick=()=>$('sdlg').close();
 
 function buildSlots(){const t=[...new Set(S.students.map(s=>s.t))].filter(Boolean).sort();
  $('slot').innerHTML='<option value="all">전체 시간</option>'+t.map(x=>`<option>${x}</option>`).join('');$('slot').value=S.slot}
-$('slot').onchange=()=>{S.slot=$('slot').value;render()};
+$('slot').onchange=()=>{S.slot=$('slot').value;setLT(S.slot);render()};
 $('g4').value=S.g4;$('g4').onchange=()=>{const v=$('g4').value;if(v==='-1'&&Object.keys(S.seats).some(k=>k.split('-')[1]==='4'))return alert('4분단에 앉은 학생이 있어 끌 수 없습니다.'),$('g4').value=S.g4;S.g4=v;render()};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{F=b.dataset.f;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act',x===b));renderList()});
 $('q').oninput=renderList;
@@ -395,9 +402,9 @@ $('lClose').onclick=()=>{$('ldlg').close();render()};
 
 // ===== 사이드바 화면 =====
 let VIEW='seat';const cmpNo=a=>String(a).split('-').map(Number).reduce((x,y)=>x*100+y,0);
-function show(v){VIEW=v;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act',b.dataset.v===v));
+function show(v){VIEW=v;document.querySelectorAll('#nav > button[data-v]').forEach(b=>b.classList.toggle('act',b.dataset.v===v));
  ['seat','list','sum','log','perm'].forEach(k=>$('v-'+k).hidden=k!==v);renderView()}
-document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+document.querySelectorAll('#nav > button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('logBtn').onclick=()=>show('log');
 function renderView(){if(VIEW==='list')renderTable();else if(VIEW==='sum')renderSum();else if(VIEW==='log')renderLog();else if(VIEW==='perm')renderPerm()}
 let PD={requests:[],members:[]};
@@ -421,7 +428,8 @@ function renderPerm(){const R=PD.requests,M=PD.members;$('reqCnt').textContent=R
 const times=()=>[...new Set(S.students.map(s=>s.t))].filter(Boolean).sort();
 let lK='t',lD=1;
 function stLabel(x,s){return x?(x.gone?'귀가':ST[x.st]):(s&&s.absent?'결석':s&&s.hold?'보류':'미착석')}
-function renderTable(){const T=$('lT'),cur=T.value;T.innerHTML='<option value="">전체 시간</option>'+times().map(x=>`<option>${x}</option>`).join('');T.value=cur;
+function setLT(v){const T=$('lT');T.dataset.want=v==='all'?'':v;T.value=T.dataset.want}
+function renderTable(){const T=$('lT'),cur=T.dataset.want!==undefined?T.dataset.want:T.value;delete T.dataset.want;T.innerHTML='<option value="">전체 시간</option>'+times().map(x=>`<option>${x}</option>`).join('');T.value=cur;
  const G=$('lG').value,F=$('lS').value,Q=$('lQ').value.trim();
  const L=S.students.map(s=>({s,x:stuStatus(s)})).filter(({s,x})=>(!T.value||s.t===T.value)&&(!G||String(s.g)===G)&&(!Q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(Q))
   &&(!F||(F==='none'?!x&&!s.hold&&live(s):F==='hold'?!x&&s.hold:F==='absent'?s.absent:F==='done'?x&&x.st==='done':x&&x.st===F&&!x.gone)));
@@ -453,7 +461,7 @@ function renderSum(){renderTiles();let tot=[0,0,0,0],th=0,ta=0;
   return`<tr data-t="${t}" style="cursor:pointer"><td><b>${t}</b></td><td class="n">${c(1).length} <span class="meta">(${gone(1)})</span></td><td class="meta">${no(1)}</td><td class="n">${c(2).length} <span class="meta">(${gone(2)})</span></td><td class="meta">${no(2)}</td><td style="color:#6d28d9">${hn||'<span class="meta">—</span>'}</td><td class="meta">${abl.map(s=>s.name).join(', ')||'—'}</td><td class="n"><b>${a.length}</b></td></tr>`});
  $('sTb').innerHTML='<thead><tr><th>시간</th><th>1그룹</th><th>1그룹 번호</th><th>2그룹</th><th>2그룹 번호</th><th>보류</th><th>결석</th><th>합계</th></tr></thead><tbody>'+rows.join('')+
   `</tbody><tfoot><tr><td>합계</td><td class="n">${tot[0]} <span class="meta">(${tot[2]})</span></td><td></td><td class="n">${tot[1]} <span class="meta">(${tot[3]})</span></td><td></td><td>${th}명</td><td>${ta}명</td><td class="n">${tot[0]+tot[1]}</td></tr></tfoot>`;
- $('sTb').querySelectorAll('tr[data-t]').forEach(r=>r.onclick=()=>{$('lT').value=r.dataset.t;show('list');$('lT').value=r.dataset.t;renderTable()})}
+ $('sTb').querySelectorAll('tr[data-t]').forEach(r=>r.onclick=()=>{S.slot=r.dataset.t;$('slot').value=S.slot;setLT(S.slot);show('list');render()})}
 function renderLog(){$('gcnt').textContent=`${S.log.length}건`;
  $('gBody').innerHTML=S.log.length?'<table><thead><tr><th>시각</th><th>자리</th><th>번호</th><th>이름</th><th>상태</th><th></th></tr></thead><tbody>'+
  S.log.map((l,i)=>`<tr><td><input value="${l.time}" data-i="${i}" data-f="time" style="width:90px"></td><td>${seatLabel(l.seat)}</td><td><input value="${l.no}" data-i="${i}" data-f="no" style="width:60px"></td><td><input value="${l.name}" data-i="${i}" data-f="name" style="width:110px"></td><td><select data-i="${i}" data-f="st">${Object.keys(ST).map(k=>`<option value="${k}" ${k===l.st?'selected':''}>${ST[k]}</option>`).join('')}</select></td><td><button data-del="${i}">삭제</button></td></tr>`).reverse().join('')+'</tbody></table>'
@@ -500,9 +508,19 @@ function renderSlotbar(){const b=$('slotbar');if(!b)return;const T=times();
  const cnt=t=>{const a=S.students.filter(s=>(!t||s.t===t)&&live(s));return[a.filter(s=>stuStatus(s)).length,a.length]};
  b.innerHTML='';[['all','전체'],...T.map(x=>[x,x])].forEach(([v,l])=>{const[c,n]=cnt(v==='all'?null:v);const e=document.createElement('button');
   e.className=(S.slot===v?'act ':'')+(n&&c===n?'full':'');e.innerHTML=`<b>${l}</b><small>${c}/${n}명</small>`;e.title=`${l}: 도착 ${c}명 / 전체 ${n}명`;
-  e.onclick=()=>{S.slot=v;$('slot').value=v;render()};b.appendChild(e)});
+  e.onclick=()=>{S.slot=v;$('slot').value=v;setLT(v);render()};b.appendChild(e)});
  const a=b.querySelector('.act');if(a&&a.scrollIntoView&&b._last!==S.slot){b._last=S.slot;a.scrollIntoView({block:'nearest',inline:'center'})}}
-const _render0=render;render=function(){_render0();renderSlotbar()};
+const _render0=render;render=function(){_render0();renderSlotbar();renderNavTimes()};
+// 왼쪽 사이드바 시간대: 누르면 「학생 명단」에서 그 시간 학생만
+function renderNavTimes(){const box=$('navTimes');if(!box)return;const cur=S.slot||'all';
+ const L=[['all','전체']].concat(times().map(t=>[t,t]));box.replaceChildren();
+ const h=document.createElement('div');h.className='h';h.textContent='시간대별 학생';box.append(h);
+ L.forEach(([v,l])=>{const a=S.students.filter(s=>(v==='all'||s.t===v)&&live(s));const c=a.filter(s=>stuStatus(s)).length;
+  const b=document.createElement('button');b.type='button';b.className=(cur===v&&VIEW==='list')?'act':'';b.title=`${l}: 도착 ${c}명 / ${a.length}명`;
+  const t=document.createElement('span');t.textContent=l;t.style.fontSize='13px';const sm=document.createElement('small');sm.textContent=`${c}/${a.length}`;b.append(t,sm);
+  b.onclick=()=>{S.slot=v;$('slot').value=v;setLT(v);show('list');render()};box.append(b)})}
+$('lT').addEventListener('input',()=>{S.slot=$('lT').value||'all';$('slot').value=S.slot;render()});
+const _show0=show;show=function(v){_show0(v);renderNavTimes()};
 function mirrorNames(sel,box){box.innerHTML='';const L=[...sel.options].filter(o=>o.value);
  if(!L.length){box.innerHTML='<div class="none">이 시간대에 남은 학생이 없습니다.</div>';return}
  L.forEach(o=>{const[nm,sc]=o.textContent.split(' · ');const e=document.createElement('button');e.type='button';e.className=sel.value===o.value?'act':'';
