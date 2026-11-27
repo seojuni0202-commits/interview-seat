@@ -20,7 +20,7 @@ button.pri{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:
 .menu.open>div{display:flex;flex-direction:column;gap:4px}.menu>div button{text-align:left;border:none}
 .stats{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
 .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--mute)}.chip b{color:var(--ink);font-size:14px;margin-left:3px}
-.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
+.chip.hold{background:#ede9fe;color:#6d28d9}.chip.hold b{color:#6d28d9}.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;padding:10px 16px 16px}
 @media(max-width:1100px){main{grid-template-columns:minmax(0,1fr)}aside{position:static!important;max-height:none!important}.list{max-height:420px}}
 .room{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
@@ -307,7 +307,7 @@ function toast(m){const x=$('toast');x.textContent=m;x.classList.add('on');clear
 function quick(k){const z=S.seats[k];const s=stu(z.sid);const n=NEXT[z.st][0];
  if(n==='empty'){addLog(k,s,'empty');delete S.seats[k];toast(`${s.name} 귀가 처리, 자리 비움`)}else{z.st=n;z.at=now();addLog(k,s,n);toast(`${s.name} → ${ST[n]}`)}render()}
 function renderStats(){const z=Object.values(S.seats);const c=k=>z.filter(x=>x.st===k).length;
- const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip">명단<b>${S.students.length}</b></span>`}
+ const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip hold" title="나중에 오기로 한 학생">보류<b>${S.students.filter(s=>s.hold&&!stuStatus(s)).length}</b></span><span class="chip" title="아직 안 왔고 보류도 아닌 학생">아직 안 옴<b>${S.students.filter(s=>!stuStatus(s)&&!s.hold).length}</b></span><span class="chip" style="font-weight:700">총 인원<b>${S.students.length}</b></span>`}
 let F='all';
 function slotOk(s){return S.slot==='all'||s.t===S.slot}
 function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML='';
