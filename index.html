@@ -46,7 +46,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;padding:10p
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--mute)}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
 aside{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 120px);position:sticky;top:70px;min-width:0}
-.tabs{display:flex;gap:4px}.tabs button{flex:1;padding:6px 4px;font-size:13px}.tabs button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}.tabs button{flex:1 0 auto;padding:6px 8px;font-size:13px;white-space:nowrap}.tabs button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
 .list{overflow:auto;flex:1;border-top:1px solid var(--line)}
 .stu{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);gap:6px}
 .stu .meta{color:var(--mute);font-size:12px}.stu button{min-height:30px;padding:4px 9px;font-size:12px}
@@ -73,6 +73,16 @@ table{border-collapse:collapse;width:100%;font-size:12px}td,th{border-bottom:1px
 #callTb tr.pick{cursor:pointer}#callTb tr.pick:hover td{background:#eef2ff}#callTb tr.picked td{background:#e0e7ff}
 body.ro #callNext,body.ro #callPick,body.ro #callPickDone,body.ro #callPickCancel,body.ro [data-call]{display:none!important}
 .seat .ordb{background:var(--waitk);color:#fff;border-radius:4px;padding:0 4px;font-weight:800}
+.seat.away{background:repeating-linear-gradient(135deg,#f9fafb 0 6px,#eef0f3 6px 12px)!important;border-style:dashed!important;animation:none!important}.seat.away .st{color:#6b7280!important}
+.seat .memo{font-size:10px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nextbox{border:2px solid var(--waitk);background:#fffbeb;border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.nextbox h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}.nextbox h3 small{font-weight:500;color:var(--mute);font-size:11px}
+.nextbox .nx{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:#fff;border:1px solid var(--line);min-width:0}
+.nextbox .nx.first{border-color:var(--waitk);box-shadow:0 0 0 1px var(--waitk)}.nextbox .nx .o{font-weight:800;font-size:16px;width:18px;text-align:center;flex:none}
+.nextbox .nx .w{min-width:0;flex:1;line-height:1.25}.nextbox .nx .w b{font-size:14px}.nextbox .nx .w div{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nextbox .nx button{min-height:30px;padding:3px 10px;font-size:12px;flex:none}.nextbox .aw{font-size:12px;color:var(--mute)}.nextbox .aw button{min-height:26px;padding:2px 8px;font-size:11px}
+.badge.away{background:#e5e7eb;color:#374151}
+body.ro .nextbox button,body.ro #dAway{display:none!important}
 /* 시간을 고르면 다른 시간 학생 자리는 가림 */
 .seat.other{opacity:.22;pointer-events:none;background:#f3f4f6!important;border-color:var(--line)!important;animation:none!important}.seat.other .nm,.seat.other .no,.seat.other .qa,.seat.other .st{visibility:hidden}
 #navTimes{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);max-height:calc(100vh - 400px);overflow:auto}
@@ -180,6 +190,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
   </div>
  </section>
  <aside>
+  <div class="nextbox" id="nextBox"></div>
   <div class="tabs"><button data-f="all" class="act">전체</button> <button data-f="1">1그룹</button> <button data-f="2">2그룹</button> <button data-f="todo">미착석</button> <button data-f="absent">결석</button> <button data-f="skip">안 하고 감</button></div>
   <input id="q" placeholder="이름·번호·학교·전화 검색">
   <div class="list" id="list"></div>
@@ -198,7 +209,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
 <section id="v-call" class="pane" hidden>
  <div class="ptop"><h2>호명 순서 <span id="callCnt" class="meta"></span></h2>
   <button class="pri" id="callNext">다음 사람 호명</button><button id="callPick">순서 선택</button><button id="callPickDone" hidden>순서 확정</button><button id="callPickCancel" hidden>취소</button></div>
- <p class="meta" id="callHint" style="margin:0 0 10px">자리에서 <b>대기</b> 중인 학생을 부를 순서예요. ↑↓로 옮기거나, [순서 선택]을 누른 뒤 부를 순서대로 이름을 차례로 누르세요. 위쪽에서 시간을 고르면 그 시간 학생만 나와요.</p>
+ <p class="meta" id="callHint" style="margin:0 0 10px">자리에서 <b>대기</b> 중인 학생을 부를 순서예요. <b>앞 시간 학생이 자동으로 먼저</b> 오고, 같은 시간 안에서는 ↑↓나 [순서 선택]으로 정해요. <b>자리비움</b>인 학생은 건너뛰어요.</p>
  <div class="tw" style="max-height:none"><table id="callTb"></table></div>
 </section>
 <section id="v-perm" class="pane" hidden>
@@ -217,6 +228,8 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
   <button class="stbtn" data-s="empty">비어있음</button><button class="stbtn" data-s="wait" style="background:var(--wait)">대기</button>
   <button class="stbtn" data-s="fb" style="background:var(--fb)">피드백 중</button><button class="stbtn" data-s="done" style="background:var(--done)">완료</button><button class="stbtn" data-s="hold" style="background:#ede9fe;color:#6d28d9" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>
  </div>
+ <div class="row" style="margin-top:8px"><button id="dAway" type="button" title="잠깐 자리를 비운 학생 — 호명 순서에서 건너뜀">자리비움</button></div>
+ <label>메모 (이 학생)</label><textarea id="dMemo" rows="2" style="width:100%;font:inherit;padding:7px 11px;border:1px solid var(--line);border-radius:8px" placeholder="예: 화장실, 5분 뒤 복귀"></textarea>
  <div id="dHist" style="margin-top:12px"></div>
  <div class="row"><button class="pri" id="dSave">저장</button><button id="dClose">닫기</button></div>
 </dialog>
@@ -230,7 +243,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
 <dialog id="sdlg"><h3>학생 정보</h3>
  <label>그룹</label><select id="sG"><option value="1">1그룹 (연미)</option><option value="2">2그룹 (연미 이외)</option></select>
  <label>시간</label><input id="sT"><label>명찰 번호</label><input id="sNo"><label>이름</label><input id="sName">
- <label>전화번호</label><input id="sPhone"><label>학교</label><input id="sSchool">
+ <label>전화번호</label><input id="sPhone"><label>학교</label><input id="sSchool"><label>메모</label><textarea id="sMemo" rows="2" style="width:100%;font:inherit;padding:7px 11px;border:1px solid var(--line);border-radius:8px" placeholder="예: 10분 늦는다고 연락 옴"></textarea>
  <div class="row"><button class="pri" id="sSave">저장</button><button id="sDel">삭제</button><button id="sClose">닫기</button></div>
 </dialog>
 
@@ -315,8 +328,19 @@ function toggleAbsent(s){if(ROLE!=='admin'||!s||stuStatus(s))return;
 // ===== 호명 순서 =====
 function nextQ(){return Math.max(0,...Object.values(S.seats).map(z=>+z.q||0))+1}
 function waitList(){return Object.entries(S.seats).filter(([k,z])=>z.st==='wait').map(([k,z])=>({k,z,s:stu(z.sid)})).filter(o=>o.s&&slotOk(o.s))
- .sort((a,b)=>((+a.z.q||1e9)-(+b.z.q||1e9))||String(a.z.at||'').localeCompare(String(b.z.at||''))||a.k.localeCompare(b.k))}
+ .sort((a,b)=>String(a.s.t).localeCompare(String(b.s.t))||((+a.z.q||1e9)-(+b.z.q||1e9))||String(a.z.at||'').localeCompare(String(b.z.at||''))||a.k.localeCompare(b.k))}
 function setOrder(list){const base=Math.min(...list.map(o=>+o.z.q||1e9).filter(x=>x<1e9),1);list.forEach((o,i)=>{S.seats[o.k].q=base+i})}
+function toggleAway(k){if(ROLE!=='admin')return;const z=S.seats[k];if(!z)return;const s=stu(z.sid);if(z.away){delete z.away;toast(`${s.name} 자리 복귀`)}else{z.away=true;toast(`${s.name} 자리비움 — 호명 순서에서 건너뛰어요`)}render()}
+const callable=()=>waitList().filter(o=>!o.z.away);
+function callNext(){const o=callable()[0];if(o)quick(o.k);else toast('부를 학생이 없어요')}
+function renderNext(){const box=$('nextBox');if(!box)return;const W=waitList(),C=W.filter(o=>!o.z.away),A=W.filter(o=>o.z.away);box.replaceChildren();
+ box.append(el('h3',null,'📣 다음 호명',el('small',{text:(S.slot!=='all'?S.slot+' · ':'')+'앞 시간 먼저'})));
+ if(!C.length)box.append(el('div',{class:'aw',text:W.length?'대기 학생이 모두 자리비움이에요.':'대기 중인 학생이 없어요.'}));
+ C.slice(0,3).forEach((o,i)=>{const row=el('div',{class:'nx'+(i===0?' first':'')},el('span',{class:'o',text:String(i+1)}),
+   el('div',{class:'w'},el('b',{text:o.s.name}),' ',el('span',{class:'meta',text:o.s.no}),el('div',{text:`${o.s.t} · ${seatLabel(o.k)}${o.s.memo?' · 📝 '+o.s.memo:''}`})),
+   i===0?el('button',{class:'pri',text:'호명',onclick:()=>quick(o.k)}):null);box.append(row)});
+ if(C.length>3)box.append(el('div',{class:'aw',text:`그 뒤로 ${C.length-3}명 더 — 「📣 호명 순서」에서 전체 보기`}));
+ if(A.length){const aw=el('div',{class:'aw'},'자리비움: ');A.forEach((o,i)=>{aw.append(el('b',{text:o.s.name}),' ',el('button',{text:'복귀',onclick:()=>toggleAway(o.k)}),i<A.length-1?' · ':'')});box.append(aw)}}
 let PICK=null;
 function renderCall(){const L=waitList();$('callCnt').textContent=L.length?`대기 ${L.length}명${S.slot!=='all'?' · '+S.slot:''}`:'';
  const picking=!!PICK;$('callPick').hidden=picking;$('callPickDone').hidden=!picking;$('callPickCancel').hidden=!picking;$('callNext').hidden=picking;
@@ -327,12 +351,14 @@ function renderCall(){const L=waitList();$('callCnt').textContent=L.length?`대�
  const body=el('tbody');tb.append(body);
  L.forEach((o,i)=>{const pi=picking?PICK.indexOf(o.k):-1;
   const ord=picking?(pi>=0?String(pi+1):'·'):String(i+1);
-  const tr=el('tr',{class:(picking?'pick'+(pi>=0?' picked':''):(i===0?'first':''))},
-   el('td',{class:'ord',text:ord}),el('td',null,el('b',{text:o.s.name}),' ',el('span',{class:'meta',text:o.s.school||''})),
+  const firstK=(callable()[0]||{}).k;
+  const tr=el('tr',{class:(picking?'pick'+(pi>=0?' picked':''):(o.k===firstK?'first':''))},
+   el('td',{class:'ord',text:ord}),el('td',null,el('b',{text:o.s.name}),' ',el('span',{class:'meta',text:o.s.school||''}),o.z.away?el('span',{class:'badge away',text:' 자리비움'}):null,o.s.memo?el('div',{class:'meta',style:'color:#92400e',text:'📝 '+o.s.memo}):null),
    el('td',{text:o.s.no}),el('td',{text:o.s.t}),el('td',{text:seatLabel(o.k)}),
    el('td',null,...(picking?[]:[
-    el('button',{'data-call':'1',text:'↑',title:'한 칸 위로',onclick:()=>{if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]];setOrder(L);render()}}}),' ',
-    el('button',{'data-call':'1',text:'↓',title:'한 칸 아래로',onclick:()=>{if(i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];setOrder(L);render()}}}),' ',
+    el('button',{'data-call':'1',text:'↑',title:'한 칸 위로',onclick:()=>{if(i>0&&L[i-1].s.t===o.s.t){[L[i-1],L[i]]=[L[i],L[i-1]];setOrder(L);render()}else toast('앞 시간 학생이 먼저예요. 같은 시간 안에서만 옮길 수 있어요')}}),' ',
+    el('button',{'data-call':'1',text:'↓',title:'한 칸 아래로',onclick:()=>{if(i<L.length-1&&L[i+1].s.t===o.s.t){[L[i+1],L[i]]=[L[i],L[i+1]];setOrder(L);render()}else toast('앞 시간 학생이 먼저예요. 같은 시간 안에서만 옮길 수 있어요')}}),' ',
+    el('button',{'data-call':'1',text:o.z.away?'복귀':'자리비움',onclick:()=>toggleAway(o.k)}),' ',
     el('button',{'data-call':'1',class:'pri',text:'호명',onclick:()=>quick(o.k)})])));
   if(picking)tr.onclick=()=>{if(pi>=0)PICK.splice(pi,1);else PICK.push(o.k);if(PICK.length===L.length)finishPick();else renderCall()};
   body.append(tr)})}
@@ -340,7 +366,7 @@ function finishPick(){const L=waitList();const by=new Map(L.map(o=>[o.k,o]));con
 $('callPick').onclick=()=>{PICK=[];renderCall()};
 $('callPickDone').onclick=()=>finishPick();
 $('callPickCancel').onclick=()=>{PICK=null;renderCall()};
-$('callNext').onclick=()=>{const L=waitList();if(L[0])quick(L[0].k)};
+$('callNext').onclick=()=>callNext();
 // 안 하고 감: 왔다가(또는 연락으로) 면접 안 보고 간 학생. 번호는 그대로 두고 따로 셈
 function toggleSkip(s){if(ROLE!=='admin'||!s||s.absent)return;const x=stuStatus(s);if(x&&x.gone)return;
  if(s.skip){delete s.skip;toast(`${s.name} 안 하고 감 취소`);render();return}
@@ -353,30 +379,30 @@ function doneNoSeat(s){if(ROLE!=='admin'||!s||stuStatus(s))return;delete s.hold;
 function undoDone(s){if(ROLE!=='admin'||!s)return;const n=S.log.length;S.log=S.log.filter(l=>!(l.sid===s.id&&l.st==='done'&&!l.seat));if(S.log.length!==n){toast(`${s.name} 완료 취소`);render()}}
 function bunInfo(b){if(b===1)return'1그룹';if(b===2)return'왼 1그룹 · 오 2그룹';if(b===3)return'2그룹';return({'0':'공용','1':'1그룹','2':'2그룹','-1':'사용 안 함'})[S.g4]}
 function bunColor(b){return b===1?'var(--g1)':b===3?'var(--g2)':b===2?'var(--ink)':'var(--mute)'}
-function render(){const RK=new Map(waitList().map((o,i)=>[o.k,i+1]));
+function render(){const RK=new Map(callable().map((o,i)=>[o.k,i+1]));
  const g=$('grid');g.innerHTML='';
  for(let b=1;b<=3;b++){const h=document.createElement('div');h.className='bunhead';h.style.color=bunColor(b);h.innerHTML=`${b}분단<small>${bunInfo(b)}</small>`;g.appendChild(h)}
  for(let r=1;r<=7;r++)for(let b=1;b<=3;b++){const d=document.createElement('div');d.className='desk';
   for(let p=1;p<=3;p++){const e=document.createElement('div');const k=sid(r,b,p);
    if(!usable(b,p)){e.className='seat off';e.textContent='빈 책상';e.title='앉지 않는 자리'}else{const z=S.seats[k];const s=z&&stu(z.sid);const gg=seatGroup(b,p);const st=z?z.st:'empty';
-    const oth=s&&S.slot!=='all'&&s.t!==S.slot;e.className=`seat on g${gg} s-${st}${oth?' other':''}`;e.title=oth?`${seatLabel(k)} — 다른 시간(${s.t}) 학생`:seatLabel(k);
-    e.innerHTML=`<div class="top"><span>${r}줄${RK.get(k)?` <b class="ordb" title="호명 순서">${RK.get(k)}</b>`:''}</span><span class="st">${ST[st]}</span></div>`+(s?`<div class="nm">${s.name}</div><div class="no">${s.no}${s.t&&S.slot==='all'?' · '+s.t:''}</div><button class="qa">${NEXT[st][1]}</button>`:'');
+    const oth=s&&S.slot!=='all'&&s.t!==S.slot;e.className=`seat on g${gg} s-${st}${oth?' other':''}${z&&z.away?' away':''}`;e.title=oth?`${seatLabel(k)} — 다른 시간(${s.t}) 학생`:seatLabel(k);
+    e.innerHTML=`<div class="top"><span>${r}줄${RK.get(k)?` <b class="ordb" title="호명 순서">${RK.get(k)}</b>`:''}</span><span class="st">${z&&z.away?'자리비움':ST[st]}</span></div>`+(s?`<div class="nm">${s.name}</div>${s.memo?`<div class="memo" title="${s.memo}">📝 ${s.memo}</div>`:''}<div class="no">${s.no}${s.t&&S.slot==='all'?' · '+s.t:''}</div><button class="qa">${NEXT[st][1]}</button>`:'');
     e.onclick=()=>openSeat(k);
     const q=e.querySelector('.qa');if(q)q.onclick=ev=>{ev.stopPropagation();quick(k)}}
    d.appendChild(e)}
   g.appendChild(d)}
  renderList();renderStats();save();if(typeof renderView==='function')renderView()}
 function toast(m){const x=$('toast');x.textContent=m;x.classList.add('on');clearTimeout(x._t);x._t=setTimeout(()=>x.classList.remove('on'),1800)}
-function quick(k){const z=S.seats[k];const s=stu(z.sid);const n=NEXT[z.st][0];
+function quick(k){const z=S.seats[k];const s=stu(z.sid);const n=NEXT[z.st][0];delete z.away;
  if(n==='empty'){addLog(k,s,'empty');delete S.seats[k];toast(`${s.name} 귀가 처리, 자리 비움`)}else{z.st=n;z.at=now();addLog(k,s,n);toast(`${s.name} → ${ST[n]}`)}render()}
-function renderStats(){const z=Object.values(S.seats);{const n=waitList().length,b=$('callBadge');if(b){b.hidden=!n;b.textContent=n}}const c=k=>z.filter(x=>x.st===k).length;
+function renderStats(){const z=Object.values(S.seats);{const n=callable().length,b=$('callBadge');if(b){b.hidden=!n;b.textContent=n}}const c=k=>z.filter(x=>x.st===k).length;
  const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip hold" title="나중에 오기로 한 학생">보류<b>${S.students.filter(s=>s.hold&&!stuStatus(s)).length}</b></span><span class="chip absent" title="안 오는 학생(번호에서 빠짐)">결석<b>${S.students.filter(s=>s.absent).length}</b></span><span class="chip skip" title="면접을 안 하고 간 학생">안 하고 감<b>${S.students.filter(s=>s.skip).length}</b></span><span class="chip" title="아직 안 왔고 보류·결석·안 하고 감도 아닌 학생">아직 안 옴<b>${S.students.filter(s=>live(s)&&!stuStatus(s)&&!s.hold&&!s.skip).length}</b></span><span class="chip" style="font-weight:700" title="결석 제외">총 인원<b>${S.students.filter(live).length}</b></span>`}
 let F='all';
 function slotOk(s){return S.slot==='all'||s.t===S.slot}
 function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML='';
  S.students.filter(s=>slotOk(s)&&(F==='all'||(F==='todo'&&live(s)&&!s.skip)||(F==='absent'&&s.absent)||(F==='skip'&&s.skip)||(String(s.g)===F&&live(s)))&&(!q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(q)))
  .filter(s=>F!=='todo'||!stuStatus(s)).forEach(s=>{const x=stuStatus(s);const d=document.createElement('div');d.className='stu';
-  d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b> <span class="meta">${s.no} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span></div>
+  d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b> <span class="meta">${s.no} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span>${s.memo?`<div class="meta" style="color:#92400e">📝 ${s.memo}</div>`:''}</div>
   <div style="text-align:right">${x?`<span class="badge ${x.st}">${x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>${x.gone?'':'<button data-a="hold" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button> <button data-a="skip" title="면접을 안 하고 간 학생 — 자리를 비워요">안 하고 감</button>'}`:s.absent?`<span class="badge absent">결석</span><br><button data-a="absent">결석 취소</button>`:s.skip?`<span class="badge skip">안 하고 감</span><br><button data-a="skip">취소</button>`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button> <button data-a="absent" title="안 오는 학생 — 그 시간 번호가 하나 줄어요">결석</button> <button data-a="skip" title="면접을 안 하고 간 학생">안 하고 감</button>`} <button data-a="ed" title="수정">✎</button></div>`;
   d.querySelector('[data-a=ed]').onclick=()=>openStu(s.id);
   const b=d.querySelector('[data-a=sit]');if(b)b.onclick=()=>sit(s);
@@ -410,10 +436,10 @@ $('dClose').onclick=()=>$('dlg').close();
 
 let curS=null;
 function openStu(id){curS=id;const s=id?stu(id):{g:1,t:S.slot==='all'?'':S.slot,no:'',name:'',phone:'',school:''};
- $('sG').value=s.g;$('sT').value=s.t;$('sNo').value=s.no;$('sName').value=s.name;$('sPhone').value=s.phone||'';$('sSchool').value=s.school||'';
+ $('sG').value=s.g;$('sT').value=s.t;$('sNo').value=s.no;$('sName').value=s.name;$('sPhone').value=s.phone||'';$('sMemo').value=s.memo||'';$('sSchool').value=s.school||'';
  $('sDel').style.display=id?'':'none';$('sdlg').showModal()}
 $('addStu').onclick=()=>openStu(null);
-$('sSave').onclick=()=>{const v=cleanObj({g:+$('sG').value,t:$('sT').value.trim(),no:$('sNo').value.trim(),name:$('sName').value.trim(),phone:$('sPhone').value.trim(),school:$('sSchool').value.trim()});
+$('sSave').onclick=()=>{const v=cleanObj({g:+$('sG').value,t:$('sT').value.trim(),no:$('sNo').value.trim(),name:$('sName').value.trim(),phone:$('sPhone').value.trim(),school:$('sSchool').value.trim(),memo:$('sMemo').value.trim().slice(0,200)});
  if(!v.name)return alert('이름을 입력하세요.');if(curS)Object.assign(stu(curS),v);else S.students.push({...v,id:'s'+(S.seq++)});$('sdlg').close();buildSlots();render()};
 $('sDel').onclick=()=>{if(!confirm('이 학생을 명단에서 삭제할까요?'))return;S.students=S.students.filter(s=>s.id!==curS);for(const k in S.seats)if(S.seats[k].sid===curS)delete S.seats[k];$('sdlg').close();render()};
 $('sClose').onclick=()=>$('sdlg').close();
@@ -559,7 +585,7 @@ function renderSlotbar(){const b=$('slotbar');if(!b)return;const T=times();
   e.className=(S.slot===v?'act ':'')+(n&&c===n?'full':'');e.innerHTML=`<b>${l}</b><small>${c}/${n}명</small>`;e.title=`${l}: 도착 ${c}명 / 전체 ${n}명`;
   e.onclick=()=>{S.slot=v;$('slot').value=v;setLT(v);render()};b.appendChild(e)});
  const a=b.querySelector('.act');if(a&&a.scrollIntoView&&b._last!==S.slot){b._last=S.slot;a.scrollIntoView({block:'nearest',inline:'center'})}}
-const _render0=render;render=function(){_render0();renderSlotbar();renderNavTimes()};
+const _render0=render;render=function(){_render0();renderSlotbar();renderNavTimes();renderNext()};
 // 왼쪽 사이드바 시간대: 누르면 「학생 명단」에서 그 시간 학생만
 function renderNavTimes(){const box=$('navTimes');if(!box)return;const cur=S.slot||'all';
  const L=[['all','전체']].concat(times().map(t=>[t,t]));box.replaceChildren();
@@ -603,7 +629,9 @@ function tnPick(sel,tBox,nBox){const opts=[...sel.options].filter(o=>o.value);co
 arriveUI=function(){tnPick($('aTN'),$('aTimeBox'),$('aNoBox'));mirrorNames($('aName'),$('aNameBox'));aInfo()};
 const _os3=openSeat;openSeat=function(k){$('dTimeBox')._t=null;_os3(k);tnPick($('dTN'),$('dTimeBox'),$('dNoBox'))};
 const _osRO=openSeat;openSeat=function(k){if(ROLE!=='admin')return;_osRO(k)};
-const _dsHold=$('dSave').onclick;$('dSave').onclick=()=>{if(curSt==='hold'){const z=S.seats[cur];const s=z&&stu(z.sid);$('dlg').close();if(s)toggleHold(s);else toast('보류할 학생이 없는 자리예요');return}_dsHold()};
+const _osMemo=openSeat;openSeat=function(k){_osMemo(k);if(ROLE!=='admin')return;const z=S.seats[k];const s=z&&stu(z.sid);$('dMemo').value=s?(s.memo||''):'';$('dMemo').disabled=!s;$('dAway').hidden=!z;$('dAway').textContent=z&&z.away?'자리 복귀':'자리비움'};
+$('dAway').onclick=()=>{const z=S.seats[cur];const t=z&&stu(z.sid);const m=$('dMemo').value.trim().slice(0,200);if(t&&(t.memo||'')!==m)t.memo=clean(m);$('dlg').close();toggleAway(cur)};
+const _dsHold=$('dSave').onclick;$('dSave').onclick=()=>{{const id=$('dStu').value,m=$('dMemo').value.trim().slice(0,200);const t=id&&stu(id);if(t&&(t.memo||'')!==m)t.memo=clean(m)}if(curSt==='hold'){const z=S.seats[cur];const s=z&&stu(z.sid);$('dlg').close();if(s)toggleHold(s);else toast('보류할 학생이 없는 자리예요');return}_dsHold()};
 $('menuBtn').onclick=e=>{e.stopPropagation();$('menu').classList.toggle('open')};document.addEventListener('click',()=>$('menu').classList.remove('open'));
 buildSlots();render();
 </script></body></html>
