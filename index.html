@@ -20,7 +20,7 @@ button.pri{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:
 .menu.open>div{display:flex;flex-direction:column;gap:4px}.menu>div button{text-align:left;border:none}
 .stats{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
 .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--mute)}.chip b{color:var(--ink);font-size:14px;margin-left:3px}
-.chip.hold{background:#ede9fe;color:#6d28d9}.chip.hold b{color:#6d28d9}.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
+.chip.hold{background:#ede9fe;color:#6d28d9}.chip.hold b{color:#6d28d9}.chip.absent{background:#e5e7eb;color:#374151}.chip.wait{background:var(--wait)}.chip.fb{background:var(--fb)}.chip.done{background:var(--done)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;padding:10px 16px 16px}
 @media(max-width:1100px){main{grid-template-columns:minmax(0,1fr)}aside{position:static!important;max-height:none!important}.list{max-height:420px}}
 .room{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
@@ -51,7 +51,7 @@ aside{background:var(--card);border:1px solid var(--line);border-radius:12px;pad
 .stu{display:flex;justify-content:space-between;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);gap:6px}
 .stu .meta{color:var(--mute);font-size:12px}.stu button{min-height:30px;padding:4px 9px;font-size:12px}
 .badge{font-size:11px;padding:2px 7px;border-radius:10px;background:#f3f4f6;font-weight:700;white-space:nowrap}
-.badge.wait{background:var(--wait);color:var(--waitk)}.badge.fb{background:var(--fb);color:var(--fbk)}.badge.done{background:var(--done);color:var(--donek)}.badge.hold{background:#ede9fe;color:#6d28d9}
+.badge.wait{background:var(--wait);color:var(--waitk)}.badge.fb{background:var(--fb);color:var(--fbk)}.badge.done{background:var(--done);color:var(--donek)}.badge.hold{background:#ede9fe;color:#6d28d9}.badge.absent{background:#e5e7eb;color:#374151;text-decoration:line-through}
 .gtag{font-size:11px;font-weight:800}.gtag.g1{color:var(--g1)}.gtag.g2{color:var(--g2)}
 dialog{border:none;border-radius:14px;padding:20px;width:min(440px,92vw);box-shadow:0 20px 50px #0004}
 dialog::backdrop{background:#1118274d}
@@ -126,7 +126,7 @@ dialog h3{font-size:18px}
 #myName{width:120px;min-height:32px;padding:4px 8px}
 #gate{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
 #gate .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;max-width:380px;width:100%;display:grid;gap:10px}#gate h2{margin:0;font-size:18px}
-body.ro #autoBtn,body.ro #menu,body.ro #addStu,body.ro #lAdd,body.ro .qa,body.ro [data-a],body.ro [data-e],body.ro [data-s],body.ro [data-done],body.ro [data-undo],body.ro [data-hold],body.ro #gBody button{display:none!important}
+body.ro #autoBtn,body.ro #menu,body.ro #addStu,body.ro #lAdd,body.ro .qa,body.ro [data-a],body.ro [data-e],body.ro [data-s],body.ro [data-done],body.ro [data-undo],body.ro [data-hold],body.ro [data-absent],body.ro #gBody button{display:none!important}
 body.ro #gBody input,body.ro #gBody select{pointer-events:none;border-color:transparent;background:transparent}
 body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
 </style></head><body>
@@ -166,7 +166,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
   </div>
  </section>
  <aside>
-  <div class="tabs"><button data-f="all" class="act">전체</button> <button data-f="1">1그룹</button> <button data-f="2">2그룹</button> <button data-f="todo">미착석</button></div>
+  <div class="tabs"><button data-f="all" class="act">전체</button> <button data-f="1">1그룹</button> <button data-f="2">2그룹</button> <button data-f="todo">미착석</button> <button data-f="absent">결석</button></div>
   <input id="q" placeholder="이름·번호·학교·전화 검색">
   <div class="list" id="list"></div>
   <button id="addStu">+ 학생 직접 추가</button>
@@ -176,7 +176,7 @@ body.ro .seat.on{cursor:default}body.ro .seat.on:hover{box-shadow:none}
  <div class="ptop"><h2>학생 명단 <span id="lcnt" class="meta"></span></h2>
   <select id="lT"><option value="">전체 시간</option></select>
   <select id="lG"><option value="">전체 그룹</option><option value="1">1그룹</option><option value="2">2그룹</option></select>
-  <select id="lS"><option value="">전체 상태</option><option value="none">미착석</option><option value="hold">보류</option><option value="wait">대기</option><option value="fb">피드백 중</option><option value="done">완료·귀가</option></select>
+  <select id="lS"><option value="">전체 상태</option><option value="none">미착석</option><option value="hold">보류</option><option value="absent">결석</option><option value="wait">대기</option><option value="fb">피드백 중</option><option value="done">완료·귀가</option></select>
   <input id="lQ" placeholder="이름·번호·학교·전화 검색"><button id="lAdd">+ 학생 추가</button></div>
  <div class="tw"><table id="lTb"></table></div>
 </section>
@@ -283,7 +283,16 @@ function addLog(seat,s,st){S.log.push({time:now(),ts:Date.now(),seat,sid:s?s.id:
 function seatLabel(k){if(!k)return'자리 없이 완료';const[r,b,p]=k.split('-');return`${b}분단 ${r}줄 ${p==1?'왼쪽':'오른쪽'}`}
 
 const NEXT={wait:['fb','호명'],fb:['done','완료'],done:['empty','비우기']};
-function toggleHold(s){if(ROLE!=='admin'||!s)return;const x=stuStatus(s);if(x&&x.gone)return;
+// 결석: 그 시간대 번호를 하나 줄이고, 아직 안 온 학생 번호를 1번부터 다시 채움(도착한 학생 번호는 그대로)
+const live=s=>!s.absent;
+function compactSlot(t,g){const L=S.students.filter(x=>x.t===t&&+x.g===+g&&live(x));const arr=L.filter(x=>stuStatus(x));const used=new Set(arr.map(x=>x.no));
+ const free=[];for(let i=1;i<=L.length+arr.length;i++){const n=g+'-'+i;if(!used.has(n))free.push(n)}
+ L.filter(x=>!stuStatus(x)).sort((a,b)=>cmpNo(a.no)-cmpNo(b.no)).forEach((x,i)=>x.no=free[i])}
+function toggleAbsent(s){if(ROLE!=='admin'||!s||stuStatus(s))return;
+ if(s.absent){delete s.absent;s.no=s.g+'-'+(S.students.filter(x=>x.t===s.t&&+x.g===+s.g&&live(x)).length);compactSlot(s.t,s.g);toast(`${s.name} 결석 취소 → ${s.no}`)}
+ else{s.absent=true;delete s.hold;s.no='';compactSlot(s.t,s.g);toast(`${s.name} 결석 — ${s.t} 번호가 하나 줄었어요`)}
+ render()}
+function toggleHold(s){if(ROLE!=='admin'||!s||s.absent)return;const x=stuStatus(s);if(x&&x.gone)return;
  if(x){delete S.seats[x.seat];addLog(x.seat,s,'empty');s.hold=true;toast(`${s.name} 보류 — 자리를 비웠어요(나중에 다시 옴)`);render();return}
  if(s.hold)delete s.hold;else s.hold=true;toast(s.hold?`${s.name} 보류 (나중에 옴)`:`${s.name} 보류 해제`);render()}
 function doneNoSeat(s){if(ROLE!=='admin'||!s||stuStatus(s))return;delete s.hold;S.log.push({time:now(),ts:Date.now(),seat:'',sid:s.id,name:s.name,no:s.no,st:'done'});toast(`${s.name} 완료 처리(자리 없이)`);render()}
@@ -307,22 +316,23 @@ function toast(m){const x=$('toast');x.textContent=m;x.classList.add('on');clear
 function quick(k){const z=S.seats[k];const s=stu(z.sid);const n=NEXT[z.st][0];
  if(n==='empty'){addLog(k,s,'empty');delete S.seats[k];toast(`${s.name} 귀가 처리, 자리 비움`)}else{z.st=n;z.at=now();addLog(k,s,n);toast(`${s.name} → ${ST[n]}`)}render()}
 function renderStats(){const z=Object.values(S.seats);const c=k=>z.filter(x=>x.st===k).length;
- const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip hold" title="나중에 오기로 한 학생">보류<b>${S.students.filter(s=>s.hold&&!stuStatus(s)).length}</b></span><span class="chip" title="아직 안 왔고 보류도 아닌 학생">아직 안 옴<b>${S.students.filter(s=>!stuStatus(s)&&!s.hold).length}</b></span><span class="chip" style="font-weight:700">총 인원<b>${S.students.length}</b></span>`}
+ const tot=seatOrder().length;const go=new Set(S.log.filter(l=>l.st==='done').map(l=>l.sid)).size;$('stats').innerHTML=`<span class="chip">빈 자리<b>${tot-z.length}</b></span><span class="chip wait">대기<b>${c('wait')}</b></span><span class="chip fb">피드백 중<b>${c('fb')}</b></span><span class="chip done">완료<b>${c('done')}</b></span><span class="chip">귀가<b>${go}</b></span><span class="chip hold" title="나중에 오기로 한 학생">보류<b>${S.students.filter(s=>s.hold&&!stuStatus(s)).length}</b></span><span class="chip absent" title="안 오는 학생(번호에서 빠짐)">결석<b>${S.students.filter(s=>s.absent).length}</b></span><span class="chip" title="아직 안 왔고 보류·결석도 아닌 학생">아직 안 옴<b>${S.students.filter(s=>live(s)&&!stuStatus(s)&&!s.hold).length}</b></span><span class="chip" style="font-weight:700" title="결석 제외">총 인원<b>${S.students.filter(live).length}</b></span>`}
 let F='all';
 function slotOk(s){return S.slot==='all'||s.t===S.slot}
 function renderList(){const q=$('q').value.trim();const L=$('list');L.innerHTML='';
- S.students.filter(s=>slotOk(s)&&(F==='all'||F==='todo'||String(s.g)===F)&&(!q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(q)))
+ S.students.filter(s=>slotOk(s)&&(F==='all'||(F==='todo'&&live(s))||(F==='absent'&&s.absent)||(String(s.g)===F&&live(s)))&&(!q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(q)))
  .filter(s=>F!=='todo'||!stuStatus(s)).forEach(s=>{const x=stuStatus(s);const d=document.createElement('div');d.className='stu';
   d.innerHTML=`<div><span class="gtag g${s.g}">${s.g}그룹</span> <b>${s.name}</b> <span class="meta">${s.no} · ${s.t}${s.phone?' · '+s.phone:''}<br>${s.school}</span></div>
-  <div style="text-align:right">${x?`<span class="badge ${x.st}">${x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>${x.gone?'':'<button data-a="hold" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>'}`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`} <button data-a="ed" title="수정">✎</button></div>`;
+  <div style="text-align:right">${x?`<span class="badge ${x.st}">${x.gone?'귀가':ST[x.st]}</span><div class="meta">${seatLabel(x.seat).replace(' 왼쪽','L').replace(' 오른쪽','R')}</div>${x.gone?'':'<button data-a="hold" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>'}`:s.absent?`<span class="badge absent">결석</span><br><button data-a="absent">결석 취소</button>`:`${s.hold?'<span class="badge hold">보류</span><br>':''}<button data-a="sit">앉히기</button> <button data-a="done" title="자리 배치 없이 완료 처리">완료</button> <button data-a="hold" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button> <button data-a="absent" title="안 오는 학생 — 그 시간 번호가 하나 줄어요">결석</button>`} <button data-a="ed" title="수정">✎</button></div>`;
   d.querySelector('[data-a=ed]').onclick=()=>openStu(s.id);
   const b=d.querySelector('[data-a=sit]');if(b)b.onclick=()=>sit(s);
   const dn=d.querySelector('[data-a=done]');if(dn)dn.onclick=()=>doneNoSeat(s);
   const dh=d.querySelector('[data-a=hold]');if(dh)dh.onclick=()=>toggleHold(s);
+  const da=d.querySelector('[data-a=absent]');if(da)da.onclick=()=>toggleAbsent(s);
   L.appendChild(d)})}
 function freeSeatFor(g){const L=seatOrder().filter(o=>!S.seats[o.id]);return L.find(o=>seatGroup(o.b,o.p)===g)||L.find(o=>seatGroup(o.b,o.p)===0)}
 function sit(s){const o=freeSeatFor(s.g);if(!o)return alert(s.g+'그룹 빈 자리가 없습니다.');delete s.hold;S.seats[o.id]={sid:s.id,st:'wait',at:now()};addLog(o.id,s,'wait');toast(`${s.name} → ${seatLabel(o.id)}`);render()}
-$('autoBtn').onclick=()=>{const s=S.students.find(s=>slotOk(s)&&!stuStatus(s)&&!s.hold);if(!s)return alert('이 시간대에 앉힐 학생이 없습니다.');sit(s)};
+$('autoBtn').onclick=()=>{const s=S.students.find(s=>slotOk(s)&&!stuStatus(s)&&!s.hold&&live(s));if(!s)return alert('이 시간대에 앉힐 학생이 없습니다.');sit(s)};
 
 let cur=null,curSt=null;
 function openSeat(k){cur=k;const z=S.seats[k];curSt=z?z.st:'empty';const[r,b,p]=k.split('-').map(Number);const gg=seatGroup(b,p);
@@ -372,7 +382,7 @@ $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;const wb=XLS
  if(!confirm(`${L.length}명을 불러옵니다. 기존 명단을 바꿀까요? (취소 = 기존 명단 뒤에 추가)`)){L.forEach(s=>S.students.push({...s,id:'s'+(S.seq++)}))}
  else{S.students=L.map(s=>({...s,id:'s'+(S.seq++)}));S.seats={}}
  e.target.value='';buildSlots();render()};
-$('expBtn').onclick=()=>{const a=S.students.map(s=>{const x=stuStatus(s);return{그룹:s.g,시간:s.t,명찰번호:s.no,이름:s.name,전화번호:s.phone,학교:s.school,자리:x?seatLabel(x.seat):'',상태:x?(x.gone?'귀가(완료)':ST[x.st]):(s.hold?'보류':'미착석')}});
+$('expBtn').onclick=()=>{const a=S.students.map(s=>{const x=stuStatus(s);return{그룹:s.g,시간:s.t,명찰번호:s.no,이름:s.name,전화번호:s.phone,학교:s.school,자리:x?seatLabel(x.seat):'',상태:x?(x.gone?'귀가(완료)':ST[x.st]):(s.absent?'결석':s.hold?'보류':'미착석')}});
  const b=S.log.map(l=>({시각:l.time,자리:seatLabel(l.seat),명찰번호:l.no,이름:l.name,상태:ST[l.st]}));
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),'학생 현황');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(b),'자리 기록');
  saveXlsx(wb,'자리기록_'+new Date().toISOString().slice(0,10)+'.xlsx')};
@@ -410,38 +420,39 @@ function renderPerm(){const R=PD.requests,M=PD.members;$('reqCnt').textContent=R
   tb.append(el('tr',null,el('td',null,el('b',{text:m.name})),el('td',null,sel),el('td',null,rv)))})}
 const times=()=>[...new Set(S.students.map(s=>s.t))].filter(Boolean).sort();
 let lK='t',lD=1;
-function stLabel(x,s){return x?(x.gone?'귀가':ST[x.st]):(s&&s.hold?'보류':'미착석')}
+function stLabel(x,s){return x?(x.gone?'귀가':ST[x.st]):(s&&s.absent?'결석':s&&s.hold?'보류':'미착석')}
 function renderTable(){const T=$('lT'),cur=T.value;T.innerHTML='<option value="">전체 시간</option>'+times().map(x=>`<option>${x}</option>`).join('');T.value=cur;
  const G=$('lG').value,F=$('lS').value,Q=$('lQ').value.trim();
  const L=S.students.map(s=>({s,x:stuStatus(s)})).filter(({s,x})=>(!T.value||s.t===T.value)&&(!G||String(s.g)===G)&&(!Q||[s.name,s.no,s.school,s.phone,s.t].join(' ').includes(Q))
-  &&(!F||(F==='none'?!x&&!s.hold:F==='hold'?!x&&s.hold:F==='done'?x&&x.st==='done':x&&x.st===F&&!x.gone)));
+  &&(!F||(F==='none'?!x&&!s.hold&&live(s):F==='hold'?!x&&s.hold:F==='absent'?s.absent:F==='done'?x&&x.st==='done':x&&x.st===F&&!x.gone)));
  const key=({s,x})=>lK==='no'?cmpNo(s.no):lK==='st'?stLabel(x,s):lK==='seat'?(x?x.seat:''):String(s[lK]??'');
  L.sort((a,b)=>{if(lK==='t')return(a.s.t.localeCompare(b.s.t)||a.s.g-b.s.g||cmpNo(a.s.no)-cmpNo(b.s.no))*lD;const p=key(a),q=key(b);return(p>q?1:p<q?-1:0)*lD});
  const H=[['t','시간'],['g','그룹'],['no','명찰 번호'],['name','이름'],['school','학교'],['phone','전화번호'],['memo','비고'],['st','상태'],['seat','자리'],['','']];
  $('lTb').innerHTML='<thead><tr>'+H.map(([k,n])=>`<th data-k="${k}">${n}${k&&k===lK?(lD>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
   L.map(({s,x})=>`<tr><td>${s.t}</td><td class="gtag g${s.g}">${s.g}그룹</td><td>${s.no}</td><td><b>${s.name}</b></td><td>${s.school||''}</td><td>${s.phone||'<span class="meta">—</span>'}</td><td class="meta">${s.memo||''}</td>
-  <td><span class="badge ${x?x.st:(s.hold?'hold':'')}">${stLabel(x,s)}</span></td><td>${x&&!x.gone?seatLabel(x.seat):''}</td><td><button data-e="${s.id}">수정</button>${x?'':` <button data-s="${s.id}">앉히기</button> <button data-done="${s.id}" title="자리 배치 없이 완료 처리">완료</button> <button data-hold="${s.id}" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`}${x&&x.gone&&!x.seat?` <button data-undo="${s.id}">완료 취소</button>`:''}${x&&!x.gone?` <button data-hold="${s.id}" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>`:''}</td></tr>`).join('')+'</tbody>';
+  <td><span class="badge ${x?x.st:(s.absent?'absent':s.hold?'hold':'')}">${stLabel(x,s)}</span></td><td>${x&&!x.gone?seatLabel(x.seat):''}</td><td><button data-e="${s.id}">수정</button>${x?'':s.absent?` <button data-absent="${s.id}">결석 취소</button>`:` <button data-absent="${s.id}" title="안 오는 학생 — 그 시간 번호가 하나 줄어요">결석</button> <button data-s="${s.id}">앉히기</button> <button data-done="${s.id}" title="자리 배치 없이 완료 처리">완료</button> <button data-hold="${s.id}" title="나중에 오기로 한 학생">${s.hold?'보류 해제':'보류'}</button>`}${x&&x.gone&&!x.seat?` <button data-undo="${s.id}">완료 취소</button>`:''}${x&&!x.gone?` <button data-hold="${s.id}" title="자리를 비우고 나중에 다시 오는 학생으로">보류</button>`:''}</td></tr>`).join('')+'</tbody>';
  $('lcnt').textContent=`${L.length}명 / 전체 ${S.students.length}명`;
  $('lTb').querySelectorAll('th').forEach(th=>{if(th.dataset.k)th.onclick=()=>{const k=th.dataset.k;lD=k===lK?-lD:1;lK=k;renderTable()}});
  $('lTb').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>openStu(b.dataset.e));
  $('lTb').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>sit(stu(b.dataset.s)));
  $('lTb').querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>doneNoSeat(stu(b.dataset.done)));
  $('lTb').querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>undoDone(stu(b.dataset.undo)));
- $('lTb').querySelectorAll('[data-hold]').forEach(b=>b.onclick=()=>toggleHold(stu(b.dataset.hold)))}
+ $('lTb').querySelectorAll('[data-hold]').forEach(b=>b.onclick=()=>toggleHold(stu(b.dataset.hold)));
+ $('lTb').querySelectorAll('[data-absent]').forEach(b=>b.onclick=()=>toggleAbsent(stu(b.dataset.absent)))}
 ['lT','lG','lS','lQ'].forEach(id=>$(id).addEventListener('input',renderTable));$('lAdd').onclick=()=>openStu(null);
-function renderTiles(){const A=S.students,c1=A.filter(s=>+s.g===1).length,c2=A.filter(s=>+s.g===2).length;
+function renderTiles(){const ab=S.students.filter(s=>s.absent).length,A=S.students.filter(live),c1=A.filter(s=>+s.g===1).length,c2=A.filter(s=>+s.g===2).length;
  const xs=A.map(stuStatus),here=xs.filter(x=>x&&!x.gone).length,gone=xs.filter(x=>x&&x.gone).length,hold=A.filter((s,i)=>!xs[i]&&s.hold).length,todo=A.length-here-gone-hold;
  const t=(cls,k,v,d)=>`<div class="tile ${cls}"><span class="k">${k}</span><span class="v">${v}<small>명</small></span><span class="d">${d}</span></div>`;
- $('sTiles').innerHTML=t('all','현재 총 인원',A.length,`${times().length}개 시간대`)+t('g1','1그룹 (연미)',c1,'1-로 시작')+t('g2','2그룹 (연미 이외)',c2,'2-로 시작')
-  +t('','아직 안 옴',todo,'미착석')+t('','보류',hold,'나중에 오기로 함')+t('','자리에 있음',here,'대기·피드백·완료')+t('','귀가',gone,'완료 후 자리 비움')}
-function renderSum(){renderTiles();let tot=[0,0,0,0],th=0;
- const rows=times().map(t=>{const a=S.students.filter(s=>s.t===t);const c=g=>a.filter(s=>s.g==g);const gone=g=>c(g).filter(s=>{const x=stuStatus(s);return x&&x.gone}).length;
+ $('sTiles').innerHTML=t('all','현재 총 인원',A.length,ab?`결석 ${ab}명 제외`:`${times().length}개 시간대`)+t('g1','1그룹 (연미)',c1,'1-로 시작')+t('g2','2그룹 (연미 이외)',c2,'2-로 시작')
+  +t('','아직 안 옴',todo,'미착석')+t('','보류',hold,'나중에 오기로 함')+t('','결석',ab,'안 옴 · 인원에서 뺌')+t('','자리에 있음',here,'대기·피드백·완료')+t('','귀가',gone,'완료 후 자리 비움')}
+function renderSum(){renderTiles();let tot=[0,0,0,0],th=0,ta=0;
+ const rows=times().map(t=>{const a=S.students.filter(s=>s.t===t&&live(s));const abl=S.students.filter(s=>s.t===t&&s.absent);ta+=abl.length;const c=g=>a.filter(s=>s.g==g);const gone=g=>c(g).filter(s=>{const x=stuStatus(s);return x&&x.gone}).length;
   const no=g=>c(g).map(s=>s.no).sort((x,y)=>cmpNo(x)-cmpNo(y)).join(', ')||'—';
   tot[0]+=c(1).length;tot[1]+=c(2).length;tot[2]+=gone(1);tot[3]+=gone(2);
   const hl=a.filter(s=>s.hold&&!stuStatus(s));th+=hl.length;const hn=hl.map(s=>s.no+' '+s.name).join(', ');
-  return`<tr data-t="${t}" style="cursor:pointer"><td><b>${t}</b></td><td class="n">${c(1).length} <span class="meta">(${gone(1)})</span></td><td class="meta">${no(1)}</td><td class="n">${c(2).length} <span class="meta">(${gone(2)})</span></td><td class="meta">${no(2)}</td><td style="color:#6d28d9">${hn||'<span class="meta">—</span>'}</td><td class="n"><b>${a.length}</b></td></tr>`});
- $('sTb').innerHTML='<thead><tr><th>시간</th><th>1그룹</th><th>1그룹 번호</th><th>2그룹</th><th>2그룹 번호</th><th>보류</th><th>합계</th></tr></thead><tbody>'+rows.join('')+
-  `</tbody><tfoot><tr><td>합계</td><td class="n">${tot[0]} <span class="meta">(${tot[2]})</span></td><td></td><td class="n">${tot[1]} <span class="meta">(${tot[3]})</span></td><td></td><td>${th}명</td><td class="n">${tot[0]+tot[1]}</td></tr></tfoot>`;
+  return`<tr data-t="${t}" style="cursor:pointer"><td><b>${t}</b></td><td class="n">${c(1).length} <span class="meta">(${gone(1)})</span></td><td class="meta">${no(1)}</td><td class="n">${c(2).length} <span class="meta">(${gone(2)})</span></td><td class="meta">${no(2)}</td><td style="color:#6d28d9">${hn||'<span class="meta">—</span>'}</td><td class="meta">${abl.map(s=>s.name).join(', ')||'—'}</td><td class="n"><b>${a.length}</b></td></tr>`});
+ $('sTb').innerHTML='<thead><tr><th>시간</th><th>1그룹</th><th>1그룹 번호</th><th>2그룹</th><th>2그룹 번호</th><th>보류</th><th>결석</th><th>합계</th></tr></thead><tbody>'+rows.join('')+
+  `</tbody><tfoot><tr><td>합계</td><td class="n">${tot[0]} <span class="meta">(${tot[2]})</span></td><td></td><td class="n">${tot[1]} <span class="meta">(${tot[3]})</span></td><td></td><td>${th}명</td><td>${ta}명</td><td class="n">${tot[0]+tot[1]}</td></tr></tfoot>`;
  $('sTb').querySelectorAll('tr[data-t]').forEach(r=>r.onclick=()=>{$('lT').value=r.dataset.t;show('list');$('lT').value=r.dataset.t;renderTable()})}
 function renderLog(){$('gcnt').textContent=`${S.log.length}건`;
  $('gBody').innerHTML=S.log.length?'<table><thead><tr><th>시각</th><th>자리</th><th>번호</th><th>이름</th><th>상태</th><th></th></tr></thead><tbody>'+
@@ -463,7 +474,7 @@ function fillTN(sel,g,keep,curId){const L=combos(g);sel.innerHTML='';let first=n
   if(!o.disabled&&!first&&(S.slot==='all'||c.t===S.slot))first=o.value});
  sel.value=keep&&[...sel.options].some(o=>o.value===keep&&!o.disabled)?keep:(first||'')}
 function fillNames(sel,tn,curId){const[t,no]=(tn||'|').split('|');const g=+String(no).split('-')[0];sel.innerHTML='<option value="">— 이름 선택 —</option>';
- S.students.filter(s=>s.t===t&&+s.g===g&&(!arrived(s)||s.id===curId)).sort((a,b)=>a.name.localeCompare(b.name,'ko')).forEach(s=>{const o=document.createElement('option');o.value=s.id;
+ S.students.filter(s=>s.t===t&&+s.g===g&&live(s)&&(!arrived(s)||s.id===curId)).sort((a,b)=>a.name.localeCompare(b.name,'ko')).forEach(s=>{const o=document.createElement('option');o.value=s.id;
   o.textContent=`${s.name}${s.hold?'(보류)':''}${s.school?' · '+s.school:''}`;if(s.id===curId)o.selected=true;sel.appendChild(o)})}
 let aPref=null;
 function openArrive(s){aPref=s||null;fillTN($('aTN'),s?+s.g:0,null,null);
@@ -486,7 +497,7 @@ const _ds=$('dSave').onclick;$('dSave').onclick=()=>{const id=$('dStu').value,tn
 
 // ===== UI 개선: 시간대 칩, 번호·이름 버튼 =====
 function renderSlotbar(){const b=$('slotbar');if(!b)return;const T=times();
- const cnt=t=>{const a=S.students.filter(s=>!t||s.t===t);return[a.filter(s=>stuStatus(s)).length,a.length]};
+ const cnt=t=>{const a=S.students.filter(s=>(!t||s.t===t)&&live(s));return[a.filter(s=>stuStatus(s)).length,a.length]};
  b.innerHTML='';[['all','전체'],...T.map(x=>[x,x])].forEach(([v,l])=>{const[c,n]=cnt(v==='all'?null:v);const e=document.createElement('button');
   e.className=(S.slot===v?'act ':'')+(n&&c===n?'full':'');e.innerHTML=`<b>${l}</b><small>${c}/${n}명</small>`;e.title=`${l}: 도착 ${c}명 / 전체 ${n}명`;
   e.onclick=()=>{S.slot=v;$('slot').value=v;render()};b.appendChild(e)});
